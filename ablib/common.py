@@ -5,8 +5,8 @@ Created on 2012-12-29
 '''
 import re
 import sh
-#import logging
-#import sys
+import logging
+import sys
 
 def get_host_ip():
     """
@@ -18,6 +18,12 @@ def get_host_ip():
         return  ip_out[0]
     else:
         return '127.0.0.1'
+
+def mypath():        
+    my_paths = ['/ablib/ablib','/Daq328p/daq328p/hardware','/digitemPy/digitempy']
+    for path in my_paths:
+        user = sh.whoami().stdout[:-1]
+        sys.path.append('/home/'+user+'/projects' + path)
     
 
 if __name__ == "__main__":

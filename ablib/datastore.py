@@ -40,8 +40,9 @@ def submit(data_set, timestamp='', submit_to='sensoredweb.heroku.com', port=80, 
             timestamp = datetime.datetime.now()
     
     try:
+        ret = []
         for data in data_set:
-            print data_set, timestamp.strftime('%Y-%m-%d-%H:%M:%S')
+            # print data, timestamp.strftime('%Y-%m-%d-%H:%M:%S')
             # url = 'http://%s/sensordata/api/submit/datavalue/now/sn/%s/val/%s' % (submit_to, data[0], data[-1])
             serial_number = data[0]
             datavalue     = data[-1]
@@ -49,22 +50,27 @@ def submit(data_set, timestamp='', submit_to='sensoredweb.heroku.com', port=80, 
             last_submitted = get_last_value(serial_number)
             if last_submitted is not None:                
                 time_since_last_submission  = timestamp - last_submitted['timestamp']
-                if datavalue == last_submitted['datavalue'] and time_since_last_submission.seconds < max_interval:
-                    status_msg = 'skipping submission, identical value less than %d sec old' % max_interval
+                # print (abs(datavalue - last_submitted['datavalue']), threshold
+                
+                if time_since_last_submission.seconds < max_interval and abs(datavalue - last_submitted['datavalue']) < threshold:
+                    status_msg = '[SKIPPING], %s value less than %d sec old and below min change threshold %f' % (serial_number, max_interval, threshold)
                     log.info(status_msg)
-                    
-                    return status_msg
-
+                    ret.append(status_msg)
+                    continue
+            
             url = 'http://%s:%d/sensordata/api/submit/datavalue/%s/sn/%s/val/%.3f' \
                     % (submit_to, port, timestamp.strftime('%Y-%m-%d-%H:%M:%S'), serial_number, datavalue)
-            log.debug('submitting to: %s' % url)                      
+            #log.debug('submitting to: %s' % url)
             res = get(url)
             if res.ok:                
                 log.info(res.content)
+                ret.append(res.content)
                 save_last_value(serial_number, timestamp, datavalue)
             else:
                 log.info(res)
-            return res.content
+
+        return ret
+
     except Exception as E:
         log.error("Exception occured, within the submit function: %s" % E.message)
         log.error('q_data = %s' % str(data_set[0]))
@@ -160,4 +166,4 @@ def submit(data_set, timestamp='', submit_to='sensoredweb.heroku.com', port=80, 
 
 
 if __name__ == "__main__":
-	submit([['0', 0.0]])
+    submit([['0', 0.0]])
