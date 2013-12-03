@@ -31,20 +31,20 @@ def save_last_value(serial_number, timestamp, datavalue):
     datavalue_json = sjson.dumps([timestamp.strftime('%Y-%m-%d-%H:%M:%S'), datavalue])
     R.set('serial_number:'+serial_number, datavalue_json)
 
-def submit(data_set, timestamp='', submit_to='sensoredweb.heroku.com', port=80, threshold=0.01, max_interval=3600):
+def submit(data_set, timestamp='', submit_to='sensoredweb.heroku.com', port=8000, threshold=0.01, max_interval=3600):
 
     if isinstance(timestamp, str):
         if timestamp.lower() == 'now':
             timestamp = datetime.datetime.now()
         else:
             timestamp = datetime.datetime.now()
-    
+    print data_set
     try:
         ret = []
         for data in data_set:
             # print data, timestamp.strftime('%Y-%m-%d-%H:%M:%S')
             # url = 'http://%s/sensordata/api/submit/datavalue/now/sn/%s/val/%s' % (submit_to, data[0], data[-1])
-            serial_number = data[0]
+            serial_number = data[1]
             datavalue     = data[-1]
             
             last_submitted = get_last_value(serial_number)
@@ -54,13 +54,12 @@ def submit(data_set, timestamp='', submit_to='sensoredweb.heroku.com', port=80, 
                 
                 if time_since_last_submission.seconds < max_interval and abs(datavalue - last_submitted['datavalue']) < threshold:
                     status_msg = '[SKIPPING], %s value less than %d sec old and below min change threshold %f' % (serial_number, max_interval, threshold)
-                    log.info(status_msg)
+                    #log.info(status_msg)
                     ret.append(status_msg)
                     continue
             
-            url = 'http://%s:%d/sensordata/api/submit/datavalue/%s/sn/%s/val/%.3f' \
-                    % (submit_to, port, timestamp.strftime('%Y-%m-%d-%H:%M:%S'), serial_number, datavalue)
-            #log.debug('submitting to: %s' % url)
+            url = 'http://%s:%d/sensordata/api/submit/datavalue/%s/sn/%s/val/%.3f' % (submit_to, port, timestamp.strftime('%Y-%m-%d-%H:%M:%S'), serial_number, datavalue)
+            log.debug('submitting to: %s' % url)
             res = get(url)
             if res.ok:                
                 log.info(res.content)
