@@ -31,7 +31,7 @@ def save_last_value(serial_number, timestamp, datavalue):
     datavalue_json = sjson.dumps([timestamp.strftime('%Y-%m-%d-%H:%M:%S'), datavalue])
     R.set('serial_number:'+serial_number, datavalue_json)
 
-def submit(data_set, timestamp='', submit_to='sensoredweb.heroku.com', port=8000, threshold=0.01, max_interval=3600):
+def submit(data_set, timestamp='', submit_to='192.168.1.133', port=8000, threshold=0.25, max_interval=3600):
 
     if isinstance(timestamp, str):
         if timestamp.lower() == 'now':
@@ -39,6 +39,7 @@ def submit(data_set, timestamp='', submit_to='sensoredweb.heroku.com', port=8000
         else:
             timestamp = datetime.datetime.now()
     print data_set
+    
     try:
         ret = []
         for data in data_set:
