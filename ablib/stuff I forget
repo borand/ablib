@@ -1,0 +1,18 @@
+stuff I forget
+
+Linux ssh
+
+cd ~/.ssh
+ssh-keygen -t rsa -C "your_email@example.com"
+ssh-add id_rsa
+sudo apt-get install xclip
+xclip -sel clip < ~/.ssh/id_rsa.pub
+ssh -T git@github.com
+ssh-add
+
+
+
+Psql
+
+Database size 
+# SELECT pg_size_pretty(pg_database_size('geekdb'));
