@@ -7,6 +7,7 @@ from docopt import docopt
 from datastore import submit
 import simplejson as sjson
 import time
+import datetime
 
 
 log = Logger('daq_irq')
@@ -20,6 +21,9 @@ class IrqSubmit(threading.Thread):
         self.redis     = Redis(host=host)
         self.msg_count = 0
         self.busy = 0;
+        self.last = []        
+        self.Q = Queue(connection=Redis())
+        self.last_q = self.Q.enqueue(submit,([[0,'0',0]]))
         if channel=='':
             self.channel   = str(interface)
         else:
@@ -62,14 +66,17 @@ class IrqSubmit(threading.Thread):
         #self.busy = True
 
         #self.msg_count = self.msg_count + 1
-        if item['type'] == 'message':
-            print type(item['data'])
-            msg = sjson.loads(item['data'])
-            # try: 
-            #     pass#print item['data']
-            #     #msg = sjson.loads(item['data'])
-            #     #self.Log.debug('    msg=%s' % str(msg))
-            # except Exception as E:
-            #     self.Log.error(E.message)
+        if item['type'] == 'message':            
+            #msg = sjson.loads(item['data'])
+            try:             
+                msg = sjson.loads(item['data'])
+                self.last = msg
+                timestamp = datetime.datetime.strptime(msg[0].split('.')[0],"%Y-%m-%d-%H:%M:%S")
+                power_W = round(3600.0/((pow(2,16)*msg[1][1] + msg[1][2])/16e6*1024))
+                self.last_enqueue = self.Q.enqueue(submit, [[0,'hydro',power_W]], timestamp=timestamp)
+
+                self.Log.debug('    msg=%s' % str(msg))
+            except Exception as E:
+                self.Log.error(E.message)
 
 ##########################################################################################

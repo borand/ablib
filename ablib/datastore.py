@@ -37,17 +37,21 @@ def submit(data_set, timestamp='', submit_to='192.168.1.133', port=8000, thresho
         if timestamp.lower() == 'now':
             timestamp = datetime.datetime.now()
         else:
-            timestamp = datetime.datetime.now()
-    print data_set
+            try:
+                timestamp = datetime.datetime.strptime(timestamp.split('.')[0],"%Y-%m-%d-%H:%M:%S") 
+            except:
+                timestamp = datetime.datetime.now()
     
     try:
         ret = []
         for data in data_set:
             # print data, timestamp.strftime('%Y-%m-%d-%H:%M:%S')
             # url = 'http://%s/sensordata/api/submit/datavalue/now/sn/%s/val/%s' % (submit_to, data[0], data[-1])
+            print data
             serial_number = data[1]
             datavalue     = data[-1]
             
+
             last_submitted = get_last_value(serial_number)
             if last_submitted is not None:                
                 time_since_last_submission  = timestamp - last_submitted['timestamp']
