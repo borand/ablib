@@ -5,17 +5,18 @@ import tornado.websocket
 import tornado.ioloop
 import tornado.gen
 
+import simplejson as sj
 import tornadoredis
 
 
-c = tornadoredis.Client(host='192.168.1.103')
+c = tornadoredis.Client(host='192.168.1.99')
 c.connect()
 
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("template.html", title="PubSub + WebSocket Demo")
-
+        #self.render("template.html", title="PubSub + WebSocket Demo")
+        self.render("chart.html", title="PubSub + WebSocket Demo")
 
 class NewMessageHandler(tornado.web.RequestHandler):
     def post(self):
@@ -32,14 +33,16 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
 
     @tornado.gen.engine
     def listen(self):
-        self.client = tornadoredis.Client('192.168.1.103')
+        self.client = tornadoredis.Client('192.168.1.99')
         self.client.connect()
         yield tornado.gen.Task(self.client.subscribe, 'irq')
         self.client.listen(self.on_message)
 
     def on_message(self, msg):
         if msg.kind == 'message':
-            self.write_message(str(msg.body))
+            json_data = sj.loads(msg.body)            
+            power_W = round(3600.0/((pow(2,16)*json_data[1][1] + json_data[1][2])/16e6*1024))            
+            self.write_message(sj.dumps(power_W))
         if msg.kind == 'disconnect':
             # Do not try to reconnect, just send a message back
             # to the client and close the client connection
