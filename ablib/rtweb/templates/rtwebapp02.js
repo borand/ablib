@@ -52,6 +52,8 @@ $(document).ready(function() {
 				console.log('Sending command: ' + cmd);
 				$("#json_res").append("cmd>" + cmd + "\n");
 
+				$.post( "/msg", { msg: "hello redis"} );
+
 				$.getJSON('/msg/' + cmd, "", function(data) {
 					console.log(String(data));
 					$("#json_res").html($("#json_res").text() + data + '\n');
