@@ -19,7 +19,7 @@ class MainHandler(tornado.web.RequestHandler):
         self.render("chart.html", title="PubSub + WebSocket Demo")
 
 class NewMessageHandler(tornado.web.RequestHandler):
-    def post(self):
+    def post(self):error
         message = self.get_argument('message')
         c.publish('test_channel', message)
         self.set_header('Content-Type', 'text/plain')
