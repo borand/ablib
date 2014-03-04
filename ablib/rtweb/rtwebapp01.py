@@ -29,9 +29,13 @@ class MainHandler(tornado.web.RequestHandler):
         self.render("rtwebapp02.html", title="RT WEB", host_ip=host_ip, page_title='Test')
 
 class CmdHandler(tornado.web.RequestHandler):
-    def get(self,cmd):
-        para = self.get_argument("para", None)
-        self.write('cmd= %s  para= %s' % (cmd, para))
+    def get(self):
+        cmd  = self.get_argument("cmd", None)
+        param = self.get_argument("param", None)
+        msg  = simplejson.dumps({'cmd' : cmd, 'param' : param, 'res' : 'OK'})
+        #self.write('cmd= %s  para= %s' % (cmd, para))
+        print(msg)
+        self.write(msg)
 
 class NewMessageHandler(tornado.web.RequestHandler):
     def post(self):
@@ -76,7 +80,7 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
 
 application = tornado.web.Application([    
     (r'/', MainHandler),
-    (r'/cmd/(\w+)', CmdHandler),
+    (r'/cmd/', CmdHandler),
     (r'/msg', NewMessageHandler),
     (r'/track', MessageHandler),
     ],

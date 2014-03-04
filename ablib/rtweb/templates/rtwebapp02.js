@@ -1,10 +1,4 @@
-
-
-$(document).ready(function() {
-	console.log('Document ready');	
-	$('#json_res').attr('style', 'background-color:White; font-size:14px; height: 20em;');
-	
-	///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 	function open_websocket(){
 		function show_message(message){
 			// var el = document.createElement('div');
@@ -30,6 +24,12 @@ $(document).ready(function() {
 	 };
 	}
 
+$(document).ready(function() {
+	console.log('Document ready');	
+	$('#json_res').attr('style', 'background-color:White; font-size:14px; height: 20em;');
+	
+	open_websocket();
+
 	///////////////////////////////////////////////////////////////////////
 	$('#json_cmd').keydown(function(e) {
 		if (e.keyCode == 13) {
@@ -48,15 +48,12 @@ $(document).ready(function() {
 				else{
 					console.log('Sending command: ' + cmd);
 				}
-					
-				console.log('Sending command: ' + cmd);
+
 				$("#json_res").append("cmd>" + cmd + "\n");
 
-				$.post( "/msg", { msg: "hello redis"} );
-
-				$.getJSON('/msg/' + cmd, "", function(data) {
+				$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
 					console.log(String(data));
-					$("#json_res").html($("#json_res").text() + data + '\n');
+					$("#json_res").html($("#json_res").text() + data.res + '\n');
 					//$('#scratchpad').text(data);
 					var psconsole = $('#json_res');
 					psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
@@ -69,6 +66,7 @@ $(document).ready(function() {
 	$("#console_clear").click(function() {
 		console.log('Pressed clear console button');
 		$("#cmd_status").text("");
+		$('#live').val('on').slider("refresh");
 	});
 	
 	$("#options_threading").click(function() {
@@ -88,7 +86,7 @@ $(document).ready(function() {
 	function SendCmd(cmd, val) {
 		return $.getJSON('/cmd/', "cmd=" + cmd + "&param=" + val, function(data) {
 			// //alert(data);
-			$("#cmd_status").text(data);
+			$("#cmd_status").text(data.cmd);
 		});
 	}
 
