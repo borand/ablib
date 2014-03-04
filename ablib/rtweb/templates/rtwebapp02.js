@@ -8,18 +8,32 @@
 					//$('#scratchpad').text(data);
 					var psconsole = $('#json_res');
 					psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+
 		}
 
 		var ws = new WebSocket("ws://127.0.0.1:8888/track");
 		ws.onopen = function() {
+			$('#live').val('ON').slider("refresh");
 			show_message('Connected.');
 		};
 		ws.onmessage = function(event) {
-	     // var point = JSON.parse(event.data);
+	     
+	     var json_data;
+	        			try{
+	        				json_data = JSON.parse(event.data);	        				
+	        				console.log('json_data');
+	        				$('#slider1').val(json_data).slider("refresh");
+	        			}
+	        			catch(e){
+	        					console.log('JSON.parse error: "' + e +'"');
+	        				}
+
+	     
 	     // console.log(point[1][1] + point[1][2]);
 	     show_message(event.data);
 	 };
 	 ws.onclose = function() {
+	 	$('#live').val('OFF').slider("refresh");
 	 	show_message("Closed.");
 	 };
 	}
@@ -65,8 +79,7 @@ $(document).ready(function() {
 	///////////////////////////////////////////////////////////////////////
 	$("#console_clear").click(function() {
 		console.log('Pressed clear console button');
-		$("#cmd_status").text("");
-		$('#live').val('on').slider("refresh");
+		$("#cmd_status").text("");				
 	});
 	
 	$("#options_threading").click(function() {
