@@ -11,47 +11,47 @@
 			{% include "rtwebapp02.js" %}
 		</script>
 	</head>
+	
 	<body>
-
+		<!-- ################################################ -->
 		<div data-role="page" id="main_page">
 
-			<div data-role="header">
+			<div data-role="header" data-theme="b">
 				<h1>{{page_title}}</h1>
 				<a href="#options" data-icon="gear" class="ui-btn-right">Options</a>
 			</div><!-- /header -->
 
 			<div data-role="content">
 				
+				<div data-role="controlgroup" data-type="horizontal">
 
 				<select id="live" name="websocket-live" data-role="slider">
-                        <option value="ON">ON</option>
-                        <option value="OFF" selected="true">OFF</option>
+                    <option value="CONNECTED">CONNECTED</option>
+                    <option value="CONNECT" selected="true">CONNECT</option>
                 </select>
+				
+				<label for="hostname">Host name</label>
+				<input type="text" name="hostname" id="hostname" placeholder="localhost" value="" data-mini="true">
+				
+				<label for="hostport">Host name</label>
+				<input type="number" name="number" pattern="[0-9]*" id="hostport" placeholder="8888" value="" data-mini="true">
 
-				<label for="select-choice-1" class="select">Select host</label>
-				<select name="select-choice-1" id="select-choice-1">
-					<option value="standard">localhost</option>					
-				</select>
-
+				</div>
 				<label for="textarea">Response</label>
 				<textarea cols="80" rows="15" name="textarea" id="json_res" data-role="textarea" type="etc."></textarea>				
 
  				<label for="text-basic">Command</label>
-				<input type="text" name="text-basic" id="json_cmd" value="">
-				<p>
-					<a data-role="button" data-inline="true" id="console_clear">Clear</a>
-				</p>
-				<p id="cmd_status"></p>
+				<input type="text" name="text-basic" id="json_cmd" value="">				
+				</div><!-- /content -->
 
-			</div><!-- /content -->
-			<p id="scratchpad"></p>
-			<div data-role="footer">
-				<h4>Status</h4>
+			<div data-role="footer" data-theme="b">
+				<h4 id="cmd_status">Status</h4>
 			</div><!-- /footer -->
 		</div><!-- /page -->
 
 	<!-- ################################################ -->
 		<div data-role="page" id="options">
+			
 			<div data-role="header" data-theme="b">
 				<a href="#main_page" data-role="button" data-direction="reverse" data-icon="back">Main</a>
 				<h1>Options</h1>
@@ -61,15 +61,17 @@
 				<h3>Control</h3>
 				<a data-role="button" data-icon="star" id="options_ping">Ping</a>
 				<a data-role="button" data-icon="star" id="options_threading">Start Thread</a>
+				
 				<h3>Slider</h3>
-				 <input type="range" name="slider1" id="slider1" min="0" max="100" value="50">
+				 <input type="range" name="slider1" id="slider1" min="0" max="100" value="50" data-highlight="true">
 			</div><!-- /content -->
 
 			<div data-role="footer" data-theme="b">
-				<h4 id="sensordata_options_footer"></h4>
+				<h4 id="cmd_status"></h4>
 			</div><!-- /footer -->
 		</div><!-- /page -->
 
 	</body>
+
 </html>
 f

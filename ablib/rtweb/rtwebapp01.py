@@ -85,7 +85,8 @@ application = tornado.web.Application([
     (r'/track', MessageHandler),
     ],
     template_path=os.path.join(os.path.dirname(__file__), "templates"),
-    static_path=os.path.join(os.path.dirname(__file__), "static")
+    static_path=os.path.join(os.path.dirname(__file__), "static"),
+    debug=True,
     )
 
 if __name__ == '__main__':
