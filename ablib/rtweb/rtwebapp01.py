@@ -26,7 +26,7 @@ c.connect()
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         # print(self.request)        
-        self.render("rtwebapp02.html", title="RT WEB", host_ip=host_ip, page_title='Test')
+        self.render("rtwebapp03.html", title="RT WEB", host_ip=host_ip, page_title='Test')
 
 class CmdHandler(tornado.web.RequestHandler):
     def get(self):
@@ -34,9 +34,9 @@ class CmdHandler(tornado.web.RequestHandler):
         param = self.get_argument("param", None)
         msg  = simplejson.dumps({'cmd' : cmd, 'param' : param, 'res' : 'OK'})
         #self.write('cmd= %s  para= %s' % (cmd, para))
-        print(msg)
+        print('CmdHandler(%s)' % cmd)
         self.write(msg)
-
+        
 class NewMessageHandler(tornado.web.RequestHandler):
     def post(self):
         message = self.get_argument('message')
