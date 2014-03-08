@@ -82,7 +82,7 @@ application = tornado.web.Application([
     (r'/', MainHandler),
     (r'/cmd/', CmdHandler),
     (r'/msg', NewMessageHandler),
-    (r'/track', MessageHandler),
+    (r'/websocket', MessageHandler),
     ],
     template_path=os.path.join(os.path.dirname(__file__), "templates"),
     static_path=os.path.join(os.path.dirname(__file__), "static"),

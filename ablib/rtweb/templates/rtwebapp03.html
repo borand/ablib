@@ -15,8 +15,10 @@
 	<body>
 
 		<div data-role="page" id="page1">
-			<div data-role="header">
-				<h1>RT WEB</h1>
+			
+			<div data-role="header" style="overflow:hidden;">
+				<h1 id="headeer_status">RT WEB</h1>
+				 <a data-icon="power" class="ui-btn-right"> </a>
 			</div>
 
 			<div data-role="tabs"  data-theme="a">
@@ -24,13 +26,13 @@
 				<div data-role="navbar">
 					<ul>
 						<li>
-							<a href="#tab_main">Main</a>
+							<a href="#tab_main" data-icon="grid" class="ui-btn-active">Main</a>
 						</li>
 						<li>
-							<a href="#tab_console">Console</a>
+							<a href="#tab_console" data-icon="comment">Console</a>
 						</li>
 						<li>
-							<a href="#tab_settings">Settings</a>
+							<a href="#tab_settings"  data-icon="gear">Settings</a>
 						</li>
 					</ul>
 				</div>
@@ -53,8 +55,7 @@
 							</div>
 							<div class="ui-body ui-body-a">
 								<!-- ######################################################################## -->
-								<textarea cols="80" rows="15" name="textarea" id="server_msg" data-role="textarea" type="etc."></textarea>
-								
+								<textarea rows="15" name="textarea" id="server_msg" data-role="textarea" type="etc."></textarea>
 								<!-- ######################################################################## -->
 							</div>
 						</div>
@@ -70,7 +71,7 @@
 							<div class="ui-body ui-body-a">
 								<!-- <div data-role="content"> -->
 								<label for="textarea">Response</label>
-								<textarea cols="80" rows="15" name="textarea" id="json_res" data-role="textarea" type="etc."></textarea>															        
+								<textarea rows="15" name="textarea" id="json_res" data-role="textarea" type="etc."></textarea>															        
 
  								<label for="text-basic">Command</label>
 								<input type="text" name="text-basic" id="json_cmd" value="">
@@ -88,38 +89,48 @@
 								<div class="ui-grid-b">
 
 									<div class="ui-block-a">
-
 										<!-- <select id="live" name="websocket-live" data-role="slider">
 										<option value="CONNECTED">CONNECTED</option>
 										<option value="CONNECT" selected="true">CONNECT</option>
 										</select> -->
-
 										<fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
 											<legend>
 												Websocket
 											</legend>
-											<input name="radio-choice-b" id="radio-choice-c" value="list" checked="checked" type="checkbox">
-											<label for="radio-choice-c">Live</label>
+											<input name="radio-choice-b" id="radio-websocket-online" value="list" checked="checked" type="checkbox" data-mini="true">
+											<label for="radio-choice-c">.  Online  .</label>
 										</fieldset>
-
 									</div>
 
 									<div class="ui-block-b">
-
 										<label for="hostname">Host name</label>
-										<input type="text" name="hostname" id="hostname" placeholder="localhost" value="" data-mini="true">
-
+										<input type="text" name="hostname" id="hostname" value="127.0.0.1" data-mini="true">
 									</div>
 
 									<div class="ui-block-c">
-
 										<label for="hostport">Host name</label>
-										<input type="number" name="number" pattern="[0-9]*" id="hostport" placeholder="8888" value="" data-mini="true">
-
+										<input type="number" name="number" pattern="[0-9]*" id="hostport" value="8888" data-mini="true">
+									</div>
+									<div class="ui-block-c">
+										<label for="hosturl">Host url</label>
+										<input type="text" name="text" id="hosturl" value="websocket" data-mini="true">
 									</div>
 
 								</div><!-- /grid-b -->
 							</div>
+							
+							<div class="ui-body ui-body-a">
+							<p>Buttons go here</p>
+							<a href="#" class="ui-btn ui-btn-inline ui-icon-phone ui-btn-icon-left" id="button_connect">Connect</a>							
+							</div>
+
+							<div class="ui-body ui-body-a">
+							<p>Buttons go here</p>
+							<a href="#" class="ui-btn ui-btn-inline ui-icon-delete ui-btn-icon-left">Left</a>
+							<a href="#" class="ui-btn ui-btn-inline ui-icon-delete ui-btn-icon-right">Right</a>														
+							<a href="#" class="ui-btn ui-btn-inline ui-icon-delete ui-btn-icon-notext">Icon only</a>
+							</div>
+						
 						</div>
 					</div>
 

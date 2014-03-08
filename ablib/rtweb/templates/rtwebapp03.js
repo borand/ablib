@@ -83,7 +83,7 @@ function draw_chart() {
 // WEBSOCKETS FUNCTIONS
 //
 //
-function open_websocket() {
+function open_websocket(hostname, hostport, hosturl) {
 
 	dbg('Attempting to open web socket');
 	function show_message(message) {
@@ -93,7 +93,8 @@ function open_websocket() {
 		// psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 	}
 
-	var ws = new WebSocket("ws://127.0.0.1:8888/track");
+	var websocket_address = "ws://" + hostname + ":" + hostport + "/" + hosturl;
+	var ws = new WebSocket(websocket_address);
 	ws.onopen = function() {
 		dbg('web socket open');
 		$('#live').val('CONNECTED').slider("refresh");
@@ -126,18 +127,15 @@ function open_websocket() {
 //
 $(document).ready(function() {
 
+	$( "#radio-websocket-online" ).prop( "checked", false ).checkboxradio( "refresh" );
 	dbg('Document ready');
 	console.log('Document ready');
 	$('#json_res').attr('style', 'background-color:White; font-size:14px; height: 20em;');
-	$('#json_res').textinput("option", "autogrow", false);
-	$("#json_res").textinput({
-		clearBtn : true
-	});
+	$('#json_res').textinput("option", "autogrow", false);	
 	//$("#json_res").textinput( "disable" );
-
 	$('#server_msg').textinput("option", "autogrow", false);
 
-	open_websocket();
+	//open_websocket();
 	draw_chart();
 	///////////////////////////////////////////////////////////////////////
 	$('#json_cmd').keydown(function(e) {
@@ -171,9 +169,16 @@ $(document).ready(function() {
 		}
 	});
 	///////////////////////////////////////////////////////////////////////
-	$("#console_clear").click(function() {
-		console.log('Pressed clear console button');
-		$("#cmd_status").text("");
+	//
+	// BUTTONS
+	//
+	$("#button_connect").click(function() {	
+		var hostname = $('#hostname').val();
+		var hostport = $('#hostport').val();
+		var hosturl  = $('#hosturl').val();
+		dbg('Pressed button: button_connect: [host, port] ' + hostname +':' + hostport + '/'+ hosturl);
+		open_websocket(hostname, hostport, hosturl);
+		$( "#radio-websocket-online" ).prop( "checked", true ).checkboxradio( "refresh" );
 	});
 
 	$("#options_threading").click(function() {
