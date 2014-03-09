@@ -26,7 +26,7 @@ c.connect()
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         # print(self.request)        
-        self.render("rtwebapp03.html", title="RT WEB", host_ip=host_ip, page_title='Test')
+        self.render("rtwebapp04.html", title="RT WEB", host_ip=host_ip, page_title='Test')
 
 class CmdHandler(tornado.web.RequestHandler):
     def get(self):
