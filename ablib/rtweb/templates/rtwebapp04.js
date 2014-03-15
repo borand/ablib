@@ -20,6 +20,18 @@ function show_server_msg(message) {
 	psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 }
 
+function console_response_msg(message) {
+	//dbg('show_server_msg: ' + message);
+	//$("#server_msg").html(message);
+	//$("#server_msg").html($("#server_msg").text() + message);
+	//$("#server_msg").html($("#server_msg").text() + message);
+	//var psconsole = $('#server_msg');
+	//psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+	$("#json_res").html($("#json_res").text() + message[1]);					
+	var psconsole = $('#json_res');
+	psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+}
+
 ///////////////////////////////////////////////////////////////////////
 // HIGHCHARTS
 //
@@ -115,7 +127,19 @@ function open_websocket(hostname, hostport, hosturl) {
 			JsonData = JSON.parse(event.data);			
 			if (JsonData.hasOwnProperty('id')) {
 				console.log(JsonData.id);
-				$('#' + JsonData.id).val(JsonData.val).slider("refresh");
+				switch(JsonData.id)
+				{
+					case 'debug_console':
+					{
+						console_response_msg(JsonData.data);
+					}
+						break;
+					default:
+					{						
+						$('#' + JsonData.id).val(JsonData.val).slider("refresh");
+					}
+				}
+				
 			}
 			else{
 				add_measurement(JsonData);

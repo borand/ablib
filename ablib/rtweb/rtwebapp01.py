@@ -13,7 +13,7 @@ import logbook
 from tornado.options import define, options
 define("port", default=8888, help="run on the given port", type=int)
 
-log = logbook.Logger('tor-redis.py')
+log = logbook.Logger('rtwebapp01.py')
 
 redis_host_ip = '127.0.0.1'
 host_ip       = '127.0.0.1'
@@ -34,8 +34,9 @@ class CmdHandler(tornado.web.RequestHandler):
         param = self.get_argument("param", None)
         msg  = simplejson.dumps({'cmd' : cmd, 'param' : param, 'res' : 'OK'})
         #self.write('cmd= %s  para= %s' % (cmd, para))
-        print('CmdHandler(%s)' % cmd)
-        self.write(msg)
+        #print('CmdHandler(%s)' % cmd)
+        #self.write(msg)
+        c.publish('cmd',cmd)
         
 class NewMessageHandler(tornado.web.RequestHandler):
     def post(self):

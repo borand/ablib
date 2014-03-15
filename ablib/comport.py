@@ -26,8 +26,8 @@ from warnings import *
 from datetime import datetime
 from logbook import Logger
 from docopt import docopt
-from requests import get
-from redis import Redis
+
+import redis
 
 PARITY_NONE, PARITY_EVEN, PARITY_ODD = 'N', 'E', 'O'
 STOPBITS_ONE, STOPBITS_TWO = (1, 2)
@@ -37,15 +37,59 @@ TIMEOUT = 3
 log = Logger('ComPort')
 log.info("2013.12.15 20:23")
 
+##########################################################################################
+#
+class RedisSub(Thread):
+
+    def __init__(self, interface, channel='cmd', host='127.0.0.1'):
+        Thread.__init__(self)
+        self.interface = interface
+        self.redis     = redis.Redis(host=host)
+        self.channel   = channel      
+        self.pubsub    = self.redis.pubsub()
+        self.Log       = Logger('RedisSub')
+        self.Log.debug('__init__(channel=%s)' % self.channel)
+
+        self.pubsub.subscribe(self.channel)
+        self.start()
+        self.setName('RedisSub-Thread')
+
+    def __del__(self):        
+        self.Log.info('__del__()')
+        self.stop()
+
+    def stop(self):
+        self.Log.info('stop()')
+        self.redis.publish(self.channel,'unsubscribe')
+        time.sleep(1)        
+        self.Log.info('stopped')
+
+    def run(self):
+        self.Log.debug('run()')
+        for item in self    .pubsub.listen():
+            if item['data'] == "unsubscribe":
+                self.pubsub.unsubscribe()
+                self.Log.info("unsubscribed and finished")
+                break
+            else:
+                cmd = item['data']
+                if isinstance(cmd,str):
+                    self.Log.debug(cmd)
+                    self.interface.send(item['data'])
+                else:
+                    self.Log.debug(cmd)
+
+                
+        self.Log.debug('end of run()')
+
+##########################################################################################
 class ComPort(Thread):    
     read_q         = Queue()    
-    redis          = Redis()
+    redis          = redis.Redis()
     redis_send_key = 'ComPort-send'
     redis_read_key = 'ComPort-read'
-    redis_publish_channel = 'ComPort-channel'
-
-    
-
+    redis_pub_channel = 'rtweb'
+    redis_sub_channel = 'ComPort-sub'
     
     def __init__(self,
                  port = 8,
@@ -71,10 +115,6 @@ class ComPort(Thread):
         self.buffer  = ''
         self.log = Logger('ComPort')
         log.info('ComPort(is_alive=%d, serial_port_open=%d)' % (self.is_alive(), not self.serial.closed))
-        out = self.query('I')
-
-        if not out[0]:
-            log.info(out[1])
 
     def __del__(self):
         log.debug("About to delete the object")
@@ -92,6 +132,7 @@ class ComPort(Thread):
         Open the serial serial bus to be read. This starts the listening
         thread.
         '''
+
         log.debug('start_thread()')
         self.serial.flushInput()
         self.running.set()
@@ -107,7 +148,7 @@ class ComPort(Thread):
         '''
         if len(data) == 0:               
             return
-        
+        log.debug("send(cmd=%s)" % data)
         # Automatically append \n by default, but allow the user to send raw characters as well
         if CR:
             if (data[-1] == "\n"):
@@ -211,21 +252,20 @@ class ComPort(Thread):
             while(self.running.isSet()):
                 bytes_in_waiting = self.serial.inWaiting()                
                 
-                if bytes_in_waiting or self.buffer.find('\r\n') > 0:
+                if bytes_in_waiting:
                     new_data = self.serial.read(bytes_in_waiting)
                     self.buffer = self.buffer + new_data
-                    log.debug('found %d bytes inWaiting' % bytes_in_waiting)
+                    #log.debug('found %d bytes inWaiting' % bytes_in_waiting)
 
-                    crlf_index = self.buffer.find('\r\n')
-                    if crlf_index > 0:
-                        line = self.buffer[0:crlf_index+2]
-                        
-                        log.debug('read line: ' + line)                        
-                        timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-                        final_data = [timestamp, line]
-                        self.redis.publish(self.redis_publish_channel,sjson.dumps(final_data))
-                        self.read_q.put([timestamp, line])
-                        self.buffer = self.buffer[crlf_index+2:]                        
+                crlf_index = self.buffer.find('\r\n')
+                if crlf_index > 0:
+                    line = self.buffer[0:crlf_index+2]                        
+                    log.debug('read line: ' + line)                        
+                    timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+                    final_data = [timestamp, line]
+                    self.redis.publish(self.redis_pub_channel,sjson.dumps({'id':'debug_console','data':final_data}))
+                    self.read_q.put([timestamp, line])
+                    self.buffer = self.buffer[crlf_index+2:]                        
 
         except Exception as E:
             log.error("Exception occured, within the run function: %s" % E.message)
