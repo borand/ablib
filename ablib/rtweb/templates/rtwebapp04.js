@@ -1,4 +1,7 @@
-///////////////////////////////////////////////////////////////////////
+var debug_websocket;
+var debug_js;
+var debug_all = true;
+/////////////////////////////////////////////////////////////////////
 // UTILITY FUNCTIONS
 //
 //
@@ -15,9 +18,13 @@ function show_server_msg(message) {
 	//$("#server_msg").html($("#server_msg").text() + message);
 	//var psconsole = $('#server_msg');
 	//psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
-	$("#debug_console").html($("#debug_console").text() + message + '\n');					
-	var psconsole = $('#debug_console');
-	psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+		
+	if (debug_all)
+	{	
+		$("#debug_console").html(message + '\n'+ $("#debug_console").text() );					
+	//var psconsole = $('#debug_console');
+	//psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+	}
 }
 
 function console_response_msg(message) {
@@ -170,6 +177,11 @@ function connect_to_websocket_host(){
 $(document).ready(function() {
 
 	dbg('Document ready');
+
+	debug_websocket = $('#debug_websocket').prop("checked");
+	debug_js        = $('#debug_js').prop("checked");
+	debug_all       = $('#debug_all').prop("checked");
+	
 	$( "#radio-websocket-online" ).prop( "checked", false ).checkboxradio( "refresh" );
 	
 	$('#json_res').attr('style', 'background-color:White; font-size:14px; height: 20em;');
@@ -214,6 +226,13 @@ $(document).ready(function() {
 	//
 	// BUTTONS
 	//
+	$(".custom").change(function() {	
+		debug_all = $( "#debug_all" ).prop("checked");
+		dbg("debug_all = " + debug_all);
+		//alert( "Handler for .change() called." );
+		//$("#debug_all").prop("checked", true).checkboxradio("refresh");
+	});
+
 	$("#button_connect").click(function() {	
 		connect_to_websocket_host();
 	});
@@ -223,7 +242,7 @@ $(document).ready(function() {
 	});
 
 	$("#options_ping").click(function() {		
-		SendCmd('ping', 0)
+		SendCmd('ping', 0);
 		$("#cmd_status").text("Pressed options_ping button");
 	});
 
