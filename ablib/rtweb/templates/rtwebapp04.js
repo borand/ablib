@@ -39,6 +39,19 @@ function console_response_msg(message) {
 	psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 }
 
+function set_object_value(id, val){
+	var datarole = $("#"+id).attr('data-role');
+	dbg('id:' + id + " data-role: " + datarole);
+	switch(datarole){
+		case 'slider':
+			$('#' + id).val(val).slider("refresh");
+			break;
+		default:
+			$('#' + id).val(val);
+	}
+	
+}
+
 ///////////////////////////////////////////////////////////////////////
 // HIGHCHARTS
 //
@@ -146,7 +159,8 @@ function open_websocket(hostname, hostport, hosturl) {
 						break;
 					default:
 					{						
-						$('#' + JsonData.id).val(JsonData.val).slider("refresh");
+						
+						set_object_value(JsonData.id,JsonData.val);
 					}
 				}
 				
