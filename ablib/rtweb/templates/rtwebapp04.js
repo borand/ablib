@@ -108,6 +108,9 @@ function add_measurement(value){
 	series.addPoint([x, y], true, true);
 }
 
+function parse_message(message_text){
+	var temp;
+}
 ///////////////////////////////////////////////////////////////////////
 // WEBSOCKETS FUNCTIONS
 //
@@ -147,6 +150,9 @@ function open_websocket(hostname, hostport, hosturl) {
 					}
 				}
 				
+			}
+			else if(JsonData.hasOwnProperty('data')){
+				add_measurement(JsonData.data);
 			}
 			else{
 				add_measurement(JsonData);
