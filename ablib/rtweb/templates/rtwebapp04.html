@@ -61,14 +61,14 @@
 							<div class="ui-body ui-body-a">
 								<!-- ######################################################################## -->
 								<form>
-    							<label for="slider-2">ADC</label>
-    							<input name="slider-2" id="slider-2" data-highlight="true" min="0" max="100" value="50" type="range">
+    							<label for="adc">ADC</label>
+    							<input name="slider-2" id="adc" data-highlight="true" min="0" max="100" value="50" type="range">
 								</form>
 								
-								<label for="flip">Flip toggle:</label>
-								<select name="flip" id="flip" data-role="slider">
-								    <option value="off">Off</option>
-								    <option value="on">On</option>
+								<label for="flip">Checkbox-based:</label>
+								<select type="checkbox" id="flip" data-role="flipswitch" data-wrapper-class="custom-size-flipswitch">
+									<option value="off">Off</option>
+									<option value="on">On</option>
 								</select>
 								
 								<label for="daq_msg">Server Message</label>
@@ -106,6 +106,8 @@
 								<label for="textarea">Response</label>
 								<textarea rows="15" name="textarea" id="debug_console" data-role="textarea" type="etc."></textarea>
  								<a class="ui-btn ui-btn-inline ui-icon-delete ui-btn-icon-left" id="button_clear_debug_console">Clear History</a>
+ 								
+ 								
 							</div><!-- /content -->
 						</div>
 					</div>
@@ -168,7 +170,10 @@
 
 			</div>
 			<div data-role="footer" data-theme="b">
-				<h1 id='jsdbg'></h1>
+				<div class="ui-body ui-body-a">
+				<label for="text-basic">Eval</label>
+				<input type="text" name="text-basic" id="js_eval" value="">
+				</div>
 			</div>
 		</div>
 		<!-- <div role="main" class="ui-content"> -->

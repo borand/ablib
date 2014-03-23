@@ -21,9 +21,9 @@ function show_server_msg(message) {
 		
 	if (debug_all)
 	{	
-		$("#debug_console").html(message + '\n'+ $("#debug_console").text() );					
-	//var psconsole = $('#debug_console');
-	//psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+		$("#debug_console").html( $("#debug_console").text() + message + '\n');					
+	    var psconsole = $('#debug_console');
+	    psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 	}
 }
 
@@ -41,10 +41,14 @@ function console_response_msg(message) {
 
 function set_object_value(id, val){
 	var datarole = $("#"+id).attr('data-role');
-	dbg('id:' + id + " data-role: " + datarole);
+	dbg('id:' + id + " data-role: " + datarole + "  val: " + val);
 	switch(datarole){
 		case 'slider':
 			$('#' + id).val(val).slider("refresh");
+			break;
+		case 'flipswitch':
+			dbg('about to flip the switch value to:' + val + ' currently set to: ' + $('#' + id).val());
+			$('#' + id).val(val).flipswitch("refresh");
 			break;
 		default:
 			$('#' + id).val(val);
@@ -240,6 +244,17 @@ $(document).ready(function() {
 					psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 				});
 			}
+		}
+	});
+	///////////////////////////////////////////////////////////////////////
+	$('#js_eval').keydown(function(e) 
+	{
+		if (e.keyCode == 13) 
+		{
+			var cmd = $("#js_eval").val();
+			dbg('eval(' + cmd + ')');
+			eval(cmd);
+			$("#js_eval").val('');
 		}
 	});
 	///////////////////////////////////////////////////////////////////////
