@@ -55,26 +55,6 @@
 								<div id="plot"></div>
 								<!-- ######################################################################## -->
 							</div>
-							<div class="ui-bar ui-bar-a">
-								<h3>Etc</h3>
-							</div>
-							<div class="ui-body ui-body-a">
-								<!-- ######################################################################## -->
-								<form>
-    							<label for="adc">ADC</label>
-    							<input name="slider-2" id="adc" data-highlight="true" min="0" max="100" value="50" type="range">
-								</form>
-								
-								<label for="flip">Checkbox-based:</label>
-								<select type="checkbox" id="flip" data-role="flipswitch" data-wrapper-class="custom-size-flipswitch">
-									<option value="off">Off</option>
-									<option value="on">On</option>
-								</select>
-								
-								<label for="daq_msg">Server Message</label>
-								<input name="daq_msg" id="daq_msg" placeholder="daq msg" value="" type="text">
-								<!-- ######################################################################## -->
-							</div>
 						</div>
 
 					</div><!-- TAB MAIN -->
@@ -102,6 +82,7 @@
 								<h3>Debug Console</h3>
 							</div>
 							<div class="ui-body ui-body-a">
+
 								<!-- <div data-role="content"> -->
 								<label for="textarea">Response</label>
 								<textarea rows="15" name="textarea" id="debug_console" data-role="textarea" type="etc."></textarea>
@@ -109,6 +90,28 @@
  								
  								
 							</div><!-- /content -->
+							
+														<div class="ui-bar ui-bar-a">
+								<h3>Etc</h3>
+							</div>
+							<div class="ui-body ui-body-a">
+								<!-- ######################################################################## -->
+								<form>
+									<label for="adc">ADC</label>
+									<input name="slider-2" id="adc" data-highlight="true" min="0" max="100" value="50" type="range" data-role="slider">
+								</form>
+
+								<label for="flip">Checkbox-based:</label>
+								<select type="checkbox" id="flip" data-role="flipswitch" data-wrapper-class="custom-size-flipswitch">
+									<option value="off">Off</option>
+									<option value="on">On</option>
+								</select>
+
+								<label for="daq_msg">Server Message</label>
+								<input name="daq_msg" id="daq_msg" placeholder="daq msg" value="" type="text">
+								<!-- ######################################################################## -->
+							</div>
+							
 						</div>
 					</div>
 					<!-- TAB DEBUG -->

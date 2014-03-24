@@ -44,14 +44,16 @@ function set_object_value(id, val){
 	dbg('id:' + id + " data-role: " + datarole + "  val: " + val);
 	switch(datarole){
 		case 'slider':
+			dbg('case: slider');
 			$('#' + id).val(val).slider("refresh");
 			break;
-		case 'flipswitch':
+		case 'flipswitch':			
 			dbg('about to flip the switch value to:' + val + ' currently set to: ' + $('#' + id).val());
 			$('#' + id).val(val).flipswitch("refresh");
 			break;
 		default:
-			$('#' + id).val(val);
+			dbg('case: default');
+			$('#' + id).val(val)[datarole]("refresh");
 	}
 	
 }
