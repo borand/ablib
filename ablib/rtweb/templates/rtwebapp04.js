@@ -1,6 +1,9 @@
 var debug_websocket;
 var debug_js;
 var debug_all = true;
+
+var chart;
+var plot;
 /////////////////////////////////////////////////////////////////////
 // UTILITY FUNCTIONS
 //
@@ -34,7 +37,7 @@ function console_response_msg(message) {
 	//$("#server_msg").html($("#server_msg").text() + message);
 	//var psconsole = $('#server_msg');
 	//psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
-	$("#json_res").html($("#json_res").text() + message[1]);					
+	$("#json_res").html($("#json_res").text() + message[1] + '\n');					
 	var psconsole = $('#json_res');
 	psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 }
@@ -62,7 +65,7 @@ function set_object_value(id, val){
 // HIGHCHARTS
 //
 //
-var chart;
+
 function draw_chart() {
 
 	
@@ -120,6 +123,74 @@ function draw_chart() {
 	});
 }
 
+
+function draw_plot() {
+	plot = new Highcharts.Chart({
+		chart : {
+			renderTo : 'plot2',
+			defaultSeriesType : 'scatter',
+			zoomType : 'xy'
+		},
+		title : {
+			text : 'X-POL'
+		},
+		subtitle : {
+			text : ' '
+		},
+		xAxis : {
+			title : {
+				enabled : true,
+				text : 'I'
+			},
+			startOnTick : true,
+			endOnTick : true,
+			showLastLabel : true
+		},
+		yAxis : {
+			title : {
+				text : 'Q'
+			}
+		},
+		tooltip : {
+			formatter : function() {
+				return '' + this.x + ' ' + this.y + ' ';
+			}
+		},
+		plotOptions : {
+			scatter : {
+				marker : {
+					radius : 2,
+					states : {
+						hover : {
+							enabled : true,
+							lineColor : 'rgb(100,100,100)'
+						}
+					}
+				},
+				states : {
+					hover : {
+						marker : {
+							enabled : false
+						}
+					}
+				}
+			}
+		},
+		series : [{
+			name : 'X',
+			color : 'rgba(223, 83, 83, .5)',
+			data : [[0, 1]]
+
+		}, {
+			name : 'Y',
+			color : 'rgba(119, 152, 191, .5)',
+			data : [[1, 0]]
+
+		}]
+	});
+}
+
+
 function add_measurement(value){	
 	series = chart.series[0];
 	var x = (new Date()).getTime(), // current time
@@ -161,11 +232,15 @@ function open_websocket(hostname, hostport, hosturl) {
 					case 'debug_console':
 					{
 						console_response_msg(JsonData.data);
-					}
 						break;
+					}	
+					case 'plot2':
+					{
+						plot.addSeries(JsonData.data);
+						break;
+					}	
 					default:
-					{						
-						
+					{	
 						set_object_value(JsonData.id,JsonData.val);
 					}
 				}
@@ -219,6 +294,7 @@ $(document).ready(function() {
 	$('#server_msg').textinput("option", "autogrow", false);
 	
 	draw_chart();
+	draw_plot();
 	connect_to_websocket_host();
 	
 	///////////////////////////////////////////////////////////////////////
