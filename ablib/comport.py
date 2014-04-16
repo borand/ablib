@@ -19,6 +19,7 @@ import struct
 import time
 import re
 import simplejson as sjson
+import logbook
 
 from threading import Thread,Event
 from Queue import Queue, Empty
@@ -32,10 +33,11 @@ import redis
 PARITY_NONE, PARITY_EVEN, PARITY_ODD = 'N', 'E', 'O'
 STOPBITS_ONE, STOPBITS_TWO = (1, 2)
 FIVEBITS, SIXBITS, SEVENBITS, EIGHTBITS = (5,6,7,8)
-TIMEOUT = 3
+TIMEOUT = 2
 
 log = Logger('ComPort')
 log.info("2013.12.15 20:23")
+log.level = logbook.ERROR
 
 ##########################################################################################
 #
@@ -86,10 +88,13 @@ class RedisSub(Thread):
 class ComPort(Thread):    
     read_q         = Queue()    
     redis          = redis.Redis()
+    re_data        = re.compile(r'(?:<)(\d+)(?:>)(.*)(?:<\/\d+>)', re.DOTALL)
     redis_send_key = 'ComPort-send'
     redis_read_key = 'ComPort-read'
     redis_pub_channel = 'rtweb'
     redis_sub_channel = 'ComPort-sub'
+
+
     
     def __init__(self,
                  port = 8,
@@ -219,15 +224,15 @@ class ComPort(Thread):
         out = self.read(waitfor)
         query_error = out[0]
         
-        if tag:
-            pattern = re.compile(r'(?:<{0}>)(.*)(?:</{0}>)'.format(tag), re.DOTALL)
-            temp = pattern.findall(out[1])
-            if len(temp)>0:
-                query_data = temp[0]
+        print out
+
+        if query_error == 0:
+            try:            
+                query_data = sjson.loads(tmp[0][1])
                 query_error = 0
-            else:
+            except:
                 query_data  = ''
-            query_error = 0
+                query_error = 1
         else:
             query_data = out[1]
         if json:
@@ -259,12 +264,23 @@ class ComPort(Thread):
 
                 crlf_index = self.buffer.find('\r\n')
                 if crlf_index > 0:
-                    line = self.buffer[0:crlf_index+2]                        
-                    log.debug('read line: ' + line)                        
+                    # log.debug('read line: ' + line)
                     timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-                    final_data = [timestamp, line]
-                    self.redis.publish(self.redis_pub_channel,sjson.dumps({'id':'debug_console','data':final_data}))
-                    self.read_q.put([timestamp, line])
+                    line = self.buffer[0:crlf_index]
+                    temp = self.re_data.findall(line)
+                                       
+                    if len(temp):
+                        try:
+                            final_data = [timestamp, sjson.loads(temp[0][0]), sjson.loads(temp[0][1])]
+                            self.redis.publish('irq',sjson.dumps(final_data))
+                        except Exception as E:
+                            log.error(E.message)
+                            log.error("line %s" % line)
+                            final_data = [timestamp, "json loads error"] 
+                        
+                        # final_data = [timestamp, line]
+                        self.redis.publish(self.redis_pub_channel,sjson.dumps({'id':'debug_console','data':final_data}))
+                        self.read_q.put(final_data)
                     self.buffer = self.buffer[crlf_index+2:]                        
 
         except Exception as E:
@@ -283,16 +299,7 @@ class ComPort(Thread):
             log.debug('read_q is empty')
 
 if __name__ == '__main__':
-    opt = docopt(__doc__)
-    
-    D = DaqInterface(opt['--dev']);
-    resp = D.query('I',waitfor="cmd>")
-    if not resp[0]:
-        print resp[1]
-    else:
-        print "query command returned error code: ", resp[0]
-        print "Full response: ", resp
-    D.close()
-    del(D)
-    
-    log.info('All Done.')
+    C = ComPort('/dev/ttyUSB0')
+    C.send('idn')
+    C.start_thread()    
+    print C.query('idn')
