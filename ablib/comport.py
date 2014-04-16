@@ -181,6 +181,9 @@ class ComPort(Thread):
         '''
        
         serial_data = ''
+        if self.is_alive():
+            return self.read_q.get(1,1)
+
         if self.open():
             try:
                 to = time.clock()                
@@ -222,22 +225,19 @@ class ComPort(Thread):
         self.send(cmd)
         time.sleep(delay)        
         out = self.read(waitfor)
-        query_error = out[0]
-        
-        print out
-
-        if query_error == 0:
-            try:            
-                query_data = sjson.loads(tmp[0][1])
-                query_error = 0
-            except:
-                query_data  = ''
-                query_error = 1
-        else:
-            query_data = out[1]
-        if json:
-            query_data = sjson.loads(query_data)
-        return (query_error, query_data)
+        query_data = out
+        # if query_error == 0:
+        #     try:            
+        #         query_data = sjson.loads(tmp[0][1])
+        #         query_error = 0
+        #     except:
+        #         query_data  = ''
+        #         query_error = 1
+        # else:
+        #     query_data = out[1]
+        # if json:
+        #     query_data = sjson.loads(query_data)
+        return query_data
 
     def close(self):
         '''
