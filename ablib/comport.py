@@ -88,13 +88,11 @@ class RedisSub(Thread):
 class ComPort(Thread):    
     read_q         = Queue()    
     redis          = redis.Redis()
-    re_data        = re.compile(r'(?:<)(\d+)(?:>)(.*)(?:<\/\d+>)', re.DOTALL)
+    re_data        = re.compile(r'(?:<)(?P<cmd>\d+)(?:>)(.*)(?:<\/)(?P=cmd)', re.DOTALL)
     redis_send_key = 'ComPort-send'
     redis_read_key = 'ComPort-read'
     redis_pub_channel = 'rtweb'
     redis_sub_channel = 'ComPort-sub'
-
-
     
     def __init__(self,
                  port = 8,
@@ -182,7 +180,10 @@ class ComPort(Thread):
        
         serial_data = ''
         if self.is_alive():
-            return self.read_q.get(1,1)
+            try:
+                return self.read_q.get(1,1)
+            except:
+                return ''
 
         if self.open():
             try:
@@ -225,18 +226,7 @@ class ComPort(Thread):
         self.send(cmd)
         time.sleep(delay)        
         out = self.read(waitfor)
-        query_data = out
-        # if query_error == 0:
-        #     try:            
-        #         query_data = sjson.loads(tmp[0][1])
-        #         query_error = 0
-        #     except:
-        #         query_data  = ''
-        #         query_error = 1
-        # else:
-        #     query_data = out[1]
-        # if json:
-        #     query_data = sjson.loads(query_data)
+        query_data = out      
         return query_data
 
     def close(self):
@@ -274,9 +264,8 @@ class ComPort(Thread):
                             final_data = [timestamp, sjson.loads(temp[0][0]), sjson.loads(temp[0][1])]
                             self.redis.publish('irq',sjson.dumps(final_data))
                         except Exception as E:
-                            log.error(E.message)
-                            log.error("line %s" % line)
-                            final_data = [timestamp, "json loads error"] 
+                            log.error(E.message + "  line %s" % line)                            
+                            final_data = [timestamp, -1, line] 
                         
                         # final_data = [timestamp, line]
                         self.redis.publish(self.redis_pub_channel,sjson.dumps({'id':'debug_console','data':final_data}))
@@ -299,7 +288,19 @@ class ComPort(Thread):
             log.debug('read_q is empty')
 
 if __name__ == '__main__':
+    #log.level = logbook.ERROR
+    cmd_vector = ['idn', 'adc', 'dio', 'getwh', 'resetwh']
     C = ComPort('/dev/ttyUSB0')
-    C.send('idn')
-    C.start_thread()    
-    print C.query('idn')
+    C.log.level = logbook.ERROR
+    C.send('C')
+    C.start_thread()
+    try:
+        for cmd in cmd_vector:
+            out = C.query(cmd)
+            print out[2]['cmd']
+    except Exception as E:
+        print E
+
+    C.close()
+
+    print "All done"
