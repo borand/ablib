@@ -289,17 +289,19 @@ class ComPort(Thread):
 
 if __name__ == '__main__':
     #log.level = logbook.ERROR
-    cmd_vector = ['idn', 'adc', 'dio', 'getwh', 'resetwh']
+    cmd_vector = ['idn', 'adc', 'dio', 'getwh', 'resetwh', 'peek 22', 'owrom', 'owsave 1','owload', \
+                  'owsp','owdata','owwp 3 1', 'owrp 3', 'adsf']
     C = ComPort('/dev/ttyUSB0')
     C.log.level = logbook.ERROR
     C.send('C')
     C.start_thread()
-    try:
-        for cmd in cmd_vector:
+    
+    for cmd in cmd_vector:
+        try:
             out = C.query(cmd)
-            print out[2]['cmd']
-    except Exception as E:
-        print E
+            print out
+        except Exception as E:
+            print E
 
     C.close()
 
