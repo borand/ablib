@@ -37,7 +37,7 @@ function console_response_msg(message) {
 	//$("#server_msg").html($("#server_msg").text() + message);
 	//var psconsole = $('#server_msg');
 	//psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
-	$("#json_res").html($("#json_res").text() + message[1] + '\n');					
+	$("#json_res").html($("#json_res").text() + "cmd [" + message[1] + "]: " + message[2].data + '\n');
 	var psconsole = $('#json_res');
 	psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 }
