@@ -414,24 +414,32 @@ $(document).ready(function() {
 		// }
 		 // $('#launch_power').css(cssObj);
 
-        
+        if ($('#power_control_enabled').prop("checked")) {
 		$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
 					//console.log(String(data));
 					$("#json_res").html($("#json_res").text() + data.res + '\n');					
 					var psconsole = $('#json_res');
 					psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 				});
+		};
 	});
 	
 	$("#button_power_down").click(function() {
-		cmd = '11';
-		$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
-					//console.log(String(data));
-					$("#json_res").html($("#json_res").text() + data.res + '\n');					
-					var psconsole = $('#json_res');
-					psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
-				});
-	});
+		cmd = '11';			
+		if ($('#power_control_enabled').prop("checked")) {
+			dbg("Power Down");
+			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
+				//console.log(String(data));
+				$("#json_res").html($("#json_res").text() + data.res + '\n');
+				var psconsole = $('#json_res');
+				psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+			});
+		}
+		else{
+			dbg("Power control disabled");
+		}
+		});
+
 
 	function SendCmd(cmd, val) {
 		return $.getJSON('/cmd/', "cmd=" + cmd + "&param=" + val, function(data) {			
