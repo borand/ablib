@@ -414,15 +414,17 @@ $(document).ready(function() {
 		// }
 		 // $('#launch_power').css(cssObj);
 
-        if ($('#power_control_enabled').prop("checked")) {
-		$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
-					//console.log(String(data));
-					$("#json_res").html($("#json_res").text() + data.res + '\n');					
-					var psconsole = $('#json_res');
-					psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
-				});
+
+		if ($('#power_control_enabled').prop("checked")) {
+			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
+				//console.log(String(data));
+				$("#json_res").html($("#json_res").text() + data.res + '\n');
+				var psconsole = $('#json_res');
+				psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+			});
 		};
-	});
+		});
+
 	
 	$("#button_power_down").click(function() {
 		cmd = '11';			
