@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8"/>
-		<title>RT Web</title>
+		<title>Vectors 2014</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1"/>
 		<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.2/jquery.mobile-1.4.2.min.css" />				
 		<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>		
@@ -12,7 +12,7 @@
 		<script src="http://code.highcharts.com/highstock.js"></script>
 		
 		<script  type="text/javascript">
-			{% include "rtwebapp04.js" %}
+			{% include "vector01.js" %}
 		</script>
 	</head>
 	<body>
@@ -20,7 +20,7 @@
 		<div data-role="page" id="page1">
 			
 			<div data-role="header" style="overflow:hidden;" data-theme="b">
-				<h1 id="headeer_status">RT WEB</h1>
+				<h1 id="headeer_status">Vectors 2014</h1>
 				 <a class="ui-btn-right" id="live" data-theme="a">OFFLINE</a>
 			</div>
 
@@ -56,7 +56,19 @@
 							</div>
 							<div class="ui-body ui-body-a">
 								<!-- ######################################################################## -->
-								<div id="plot"></div>
+								<div class="ui-grid-a">
+									<div class="ui-block-a">
+										<div class="ui-bar ui-bar-a">
+											<div id="plot"></div>
+										</div>										
+									</div>
+									<div class="ui-block-b">
+										<div class="ui-bar ui-bar-a">
+											<div id="plot2"></div>
+										</div>
+									</div>
+								</div><!-- /grid-a -->
+
 								
 								<!-- ######################################################################## -->
 							</div>
@@ -83,7 +95,18 @@
 							</div>
 							<div class="ui-body ui-body-a">
 								<!-- ######################################################################## -->
-								<div id="plot2"></div>
+								<div class="ui-grid-a">
+									<div class="ui-block-a">
+										<div class="ui-bar ui-bar-a">
+											
+										</div>										
+									</div>
+									<div class="ui-block-b">
+										<div class="ui-bar ui-bar-a">
+											
+										</div>
+									</div>
+								</div><!-- /grid-a -->
 								<!-- ######################################################################## -->
 							</div>
 						</div>

@@ -94,6 +94,7 @@ class ComPort(Thread):
     redis_pub_channel = 'rtweb'
     redis_sub_channel = 'ComPort-sub'
     
+    
     def __init__(self,
                  port = 8,
                  packet_timeout=2,
