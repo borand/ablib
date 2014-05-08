@@ -54,6 +54,9 @@ function set_object_value(id, val){
 			dbg('about to flip the switch value to:' + val + ' currently set to: ' + $('#' + id).val());
 			$('#' + id).val(val).flipswitch("refresh");
 			break;
+		case 'text':
+			$('#' + id).text(val);
+			break
 		default:
 			dbg('case: default');
 			$('#' + id).val(val)[datarole]("refresh");
@@ -78,8 +81,10 @@ function draw_chart() {
 	// Create the chart
 	chart = new Highcharts.StockChart({
 		chart : {
-			renderTo : 'plot',			
+			renderTo : 'plot',
+			height : 700,			
 		},
+		
 		rangeSelector: {
 			buttons: [{
 				count: 1,
@@ -95,26 +100,56 @@ function draw_chart() {
 			}],
 			inputEnabled: false,
 			selected: 0
-		},
-		
+		},		
 		title : {
-			text : 'Power Consumption'
+			text : 'BER 1sec'
 		},
 		
 		exporting: {
 			enabled: false
 		},
 		
+		legend : {
+			enabled: true
+		},
+		
+		yAxis : {
+			title : {
+				text : 'BER'
+			},
+			max : 0.034,
+			min : 0.001,			
+		},
+		
 		series : [{
-			name : 'Power [W]',
+			name : 'Flex 3',
+			color: '#00FF00',
+			step: true,
 			data : (function() {
 				// generate an array of random data
 				var data = [], time = (new Date()).getTime(), i;
 
-				for( i = -999; i <= 0; i++) {
+				for( i = -99; i <= 0; i++) {
 					data.push([
 						time + i * 1000,
-						0
+						0.0
+					]);
+				}
+				return data;
+			})()
+		},
+		{
+			name : 'NL Compensated',
+			color: '#FF00FF',
+			step: true,
+			data : (function() {
+				// generate an array of random data
+				var data = [], time = (new Date()).getTime(), i;
+
+				for( i = -99; i <= 0; i++) {
+					data.push([
+						time + i * 1000,
+						0.0
 					]);
 				}
 				return data;
@@ -149,7 +184,7 @@ function draw_plot() {
 		yAxis : {
 			title : {
 				text : 'Q'
-			}
+			}			
 		},
 		tooltip : {
 			formatter : function() {
@@ -193,9 +228,11 @@ function draw_plot() {
 
 function add_measurement(value){	
 	series = chart.series[0];
-	var x = (new Date()).getTime(), // current time
-	y = value;
-	series.addPoint([x, y], true, true);
+	var t = (new Date()).getTime(); // current time	
+	series.addPoint([t, value[0]], true, true);
+	
+	series = chart.series[1];
+	series.addPoint([t, value[1]], true, true);
 }
 
 function parse_message(message_text){
@@ -287,6 +324,7 @@ $(document).ready(function() {
 	
 	$('#json_res').attr('style', 'background-color:White; font-size:14px; height: 20em;');
 	$('#json_res').textinput("option", "autogrow", false);
+	//$('#launch_power').​​​attr('style', 'background-color:White; font-size:14px; width: 5em;');
 
 	$('#debug_console').attr('style', 'background-color:White; font-size:14px; height: 20em;');
 	$('#debug_console').textinput("option", "autogrow", false);
@@ -358,6 +396,52 @@ $(document).ready(function() {
 		SendCmd('ping', 0);
 		$("#cmd_status").text("Pressed options_ping button");
 	});
+
+
+	$("#button_power_up").click(function() {
+		cmd = '10';
+		// var t = (new Date()).getTime();
+		// chart.update({
+			// type : 'flags',
+				// data : [{
+					// x : t,
+					// title : 'P',					
+				// }]});
+        
+     
+		// var cssObj = {			
+			// 'color' : 'rgb(1,0,0)'
+		// }
+		 // $('#launch_power').css(cssObj);
+
+
+		if ($('#power_control_enabled').prop("checked")) {
+			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
+				//console.log(String(data));
+				$("#json_res").html($("#json_res").text() + data.res + '\n');
+				var psconsole = $('#json_res');
+				psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+			});
+		};
+		});
+
+	
+	$("#button_power_down").click(function() {
+		cmd = '11';			
+		if ($('#power_control_enabled').prop("checked")) {
+			dbg("Power Down");
+			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
+				//console.log(String(data));
+				$("#json_res").html($("#json_res").text() + data.res + '\n');
+				var psconsole = $('#json_res');
+				psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+			});
+		}
+		else{
+			dbg("Power control disabled");
+		}
+		});
+
 
 	function SendCmd(cmd, val) {
 		return $.getJSON('/cmd/', "cmd=" + cmd + "&param=" + val, function(data) {			

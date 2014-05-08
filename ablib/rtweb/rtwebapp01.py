@@ -8,19 +8,38 @@ import tornado.gen
 import tornadoredis
 import simplejson
 import os
+import sh
+import re
 import logbook
 
 from tornado.options import define, options
 define("port", default=8888, help="run on the given port", type=int)
 
-log = logbook.Logger('rtwebapp01.py')
+##########################################################################################
+#
+#
+def get_host_ip():
+    """
+    parses ifconfig system command and returns host ip
+    """
+    ip_exp = re.compile(r'(?:eth\d.*?inet addr\:)(\d{1,3}\.\d{1,3}.\d{1,3}.\d{1,3})',re.DOTALL)
+    ip_out = ip_exp.findall(sh.ifconfig().stdout)    
+    if len(ip_out) > 0:        
+        return  ip_out[0]
+    else:
+        return '127.0.0.1'
 
-redis_host_ip = '127.0.0.1'
-host_ip       = '127.0.0.1'
+##########################################################################################
+#
+#
+log = logbook.Logger('rtwebapp01.py')
+redis_host_ip = get_host_ip()
+host_ip       = get_host_ip()
 redis_pubsub_channel = 'rtweb'
 
 c = tornadoredis.Client(host=redis_host_ip)
 c.connect()
+
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -37,6 +56,20 @@ class CmdHandler(tornado.web.RequestHandler):
         #print('CmdHandler(%s)' % cmd)
         #self.write(msg)
         c.publish('cmd',cmd)
+
+class BerHandler(tornado.web.RequestHandler):
+    def get(self, ber1, ber2):        
+        msg = '[%s, %s]' % (ber1, ber2)
+        c.publish('rtweb',msg)
+        self.write(msg)
+
+class VoaHandler(tornado.web.RequestHandler):
+    def get(self, voa):       
+        
+        msg  = '{"id" : "launch_power", "val" : %s}' % voa
+        c.publish('rtweb',msg)
+        self.write(msg)
+      
         
 class NewMessageHandler(tornado.web.RequestHandler):
     def post(self):
@@ -59,7 +92,7 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
         self.client.listen(self.on_message)
 
     def on_message(self, msg):        
-        log.debug(type(msg))
+        #log.debug(type(msg))
         if isinstance(msg,unicode):
             log.debug(msg)
         else:
@@ -83,6 +116,8 @@ application = tornado.web.Application([
     (r'/', MainHandler),
     (r'/cmd/', CmdHandler),
     (r'/msg', NewMessageHandler),
+    (r'/ber/(?P<ber1>0.\d+)/(?P<ber2>0.\d+)', BerHandler),
+    (r'/voa/(?P<voa>\d+.\d+)', VoaHandler),
     (r'/websocket', MessageHandler),
     ],
     template_path=os.path.join(os.path.dirname(__file__), "templates"),
@@ -94,5 +129,5 @@ if __name__ == '__main__':
     tornado.options.parse_command_line()
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(8888)
-    print('Demo is runing at 0.0.0.0:8888\nQuit the demo with CONTROL-C')
+    print('Demo is runing at %s:8888\nQuit the demo with CONTROL-C' % get_host_ip())
     tornado.ioloop.IOLoop.instance().start()
