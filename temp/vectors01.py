@@ -6,7 +6,7 @@ import tornado.ioloop
 import tornado.gen
 
 import tornadoredis
-import simplejson
+import simplejson as sj
 import os
 import sh
 import re
@@ -32,7 +32,7 @@ def get_host_ip():
 ##########################################################################################
 #
 #
-log = logbook.Logger('rtwebapp01.py')
+log = logbook.Logger('vectors01.py')
 redis_host_ip = get_host_ip()
 host_ip       = get_host_ip()
 redis_pubsub_channel = 'rtweb'
@@ -44,28 +44,29 @@ c.connect()
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         # print(self.request)        
-        self.render("vector01.html", title="Vectors 2014", host_ip=host_ip, page_title='Vectors 2014')
+        self.render("subvector01.html", title="Vectors 2014", host_ip=host_ip, page_title='Vectors 2014')
         
 
 class CmdHandler(tornado.web.RequestHandler):
     def get(self):
         cmd  = self.get_argument("cmd", None)
         param = self.get_argument("param", None)
-        msg  = simplejson.dumps({'cmd' : cmd, 'param' : param, 'res' : 'OK'})
+        msg  = sj.dumps({'cmd' : cmd, 'param' : param, 'res' : 'OK'})
         c.publish('cmd',cmd)
         
 
 class BerHandler(tornado.web.RequestHandler):
     def get(self, ber1, ber2):        
-        msg = '[%s, %s]' % (ber1, ber2)
-        c.publish('rtweb',msg)
+        # msg = '[%s, %s]' % (ber1, ber2)
+        msg = sj.dumps({'id' : 'chart', 'val' : [float(ber1), float(ber2)]})
+        c.publish(redis_pubsub_channel,msg)
         self.write(msg)
         
 
 class VoaHandler(tornado.web.RequestHandler):
-    def get(self, voa):
-        msg  = '{"id" : "launch_power", "val" : %s}' % voa
-        c.publish('rtweb',msg)
+    def get(self, power):
+        msg = sj.dumps({'id' : 'launch_power', 'val' : float(power)})
+        c.publish(redis_pubsub_channel,msg)
         self.write(msg)
         
         
@@ -117,7 +118,7 @@ application = tornado.web.Application([
     (r'/cmd/', CmdHandler),
     (r'/msg', NewMessageHandler),
     (r'/ber/(?P<ber1>0.\d+)/(?P<ber2>0.\d+)', BerHandler),
-    (r'/voa/(?P<voa>\d+.\d+)', VoaHandler),
+    (r'/voa/(?P<power>-*\d+.\d+)', VoaHandler),
     (r'/websocket', MessageHandler),
     ],
     template_path=os.path.join(os.path.dirname(__file__), "templates"),

@@ -58,8 +58,7 @@ function set_object_value(id, val){
 //
 //
 
-function draw_chart() {
-
+function draw_chart(render_to) {
 	
 	Highcharts.setOptions({
 		global : {
@@ -70,7 +69,7 @@ function draw_chart() {
 	// Create the chart
 	chart = new Highcharts.StockChart({
 		chart : {
-			renderTo : 'plot',
+			renderTo : render_to,
 			height : plot_height,			
 		},
 		
@@ -145,6 +144,7 @@ function draw_chart() {
 			})()
 		}]
 	});
+	return chart;
 }
 
 function draw_plot_2(render_to) {
@@ -189,12 +189,12 @@ function draw_plot_2(render_to) {
 		series : [{
 			name : 'X-POL',
 			color : 'rgba(255, 0, 0, .5)',
-			data : [[-1, 1],[0, 2],[1, 3],[2, 3.5],[3, 3],[4, 2],[5, 1],[6, 0]]
+			data : [[0, 0]]
 
 		}, {
 			name : 'Y-POL',
 			color : 'rgba(0, 0, 255, .5)',
-			data : [[-1, 2],[0, 3],[1, 4],[2, 5],[3, 4],[4, 3],[5, 2],[6, 1]]
+			data : [[0, 1]]
 
 		}]
 	});
@@ -223,10 +223,10 @@ function draw_heatmap(render_to) {
 	return chart;
 }
 
-function draw_plot() {
+function draw_plot(render_to) {
 	plot = new Highcharts.Chart({
 		chart : {
-			renderTo : 'plot2',
+			renderTo : render_to,
 			defaultSeriesType : 'spline',
 			zoomType : 'xy',
 			height : plot_height,			
@@ -250,19 +250,7 @@ function draw_plot() {
 			},
 			min : 22,
 			max : 34,			
-		},
-		// tooltip : {
-			// formatter : function() {
-				// return '' + this.x + ' ' + this.y + ' ';
-			// }
-		// },
-		// plotOptions : {
-			// scatter : {
-				// marker : {
-					// radius : 2,
-				// },				
-			// }
-		// },
+		},		
 		series : [{
 			name : 'Flex 3',
 			color : 'rgba(223, 83, 83, .5)',
@@ -277,15 +265,12 @@ function draw_plot() {
 	return plot;
 }
 
-function add_measurement(value){	
+function add_measurement(value){
 	var t = (new Date()).getTime();
 	for (i=0;i<value.length;i++){
 		series = chart.series[i];
 		series.addPoint([t, value[i]], true, true);	
-	}	
-	
-	//series = chart.series[1];
-	//series.addPoint([t, value[1]], true, true);
+	}
 }
 
 function update_const_plot(plot_id, data) {	
@@ -335,28 +320,28 @@ function open_websocket(hostname, hostport, hosturl) {
 				//console.log(JsonData.id);
 				switch(JsonData.id)
 				{
-					case 'debug_console':
-					{
-						console_response_msg(JsonData.data);
+					case 'console':{
+						console_response_msg(JsonData.val);
 						break;
-					}	
-					case 'plot2':
-					{
-						plot.addSeries(JsonData.data);
+					}
+					case 'chart':{
+						add_measurement(JsonData.val);
 						break;
-					}	
-					case 'const2':
-					{	
+					}
+					case 'const':{	
 						update_const_plot(JsonData.val.id, JsonData.val.data);
 						break;
 					}
-					case 'accum':
-					{	
+					case 'launch_power':{
+						power = JsonData.val;
+						plot.series[1].update({ data : [[power, 22],[power, 34]]});
+						break;
+					}					
+					case 'accum':{	
 						//pdate_const_plot(JsonData.val.id, JsonData.val.data);
 						break;
 					}
-					default:
-					{	
+					default:{	
 						set_object_value(JsonData.id,JsonData.val);
 					}
 				}
@@ -410,8 +395,8 @@ $(document).ready(function() {
 		
 	$('#server_msg').textinput("option", "autogrow", false);
 	
-	draw_chart();
-	plot = draw_plot();
+	chart         = draw_chart('chart');
+	plot          = draw_plot('power_plot');
 	constl_plot_1 = draw_plot_2('constl_plot_1');
 	constl_plot_2 = draw_plot_2('constl_plot_2');
 	connect_to_websocket_host();
@@ -465,14 +450,13 @@ $(document).ready(function() {
 
 	$("#button_power_up").click(function() {		
 		if ($('#power_control_enabled').prop("checked")) {
+			dbg("button_power_up");
 			cmd = 'power_up';
-			power = power + 1;		
-			plot.series[1].update({ data : [[power, 22],[power, 34]]});
 			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
-				//console.log(String(data));
-				$("#json_res").html($("#json_res").text() + data.res + '\n');
-				var psconsole = $('#json_res');
-				psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+				console_response_msg(data.res);				
+				// $("#json_res").html($("#json_res").text() + data.res + '\n');
+				// var psconsole = $('#json_res');
+				// psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 			});
 		}
 		else{
@@ -482,16 +466,13 @@ $(document).ready(function() {
 	
 	$("#button_power_down").click(function() {		
 		if ($('#power_control_enabled').prop("checked")) {
-			dbg("Power Down");
-			
+			dbg("button_power_down");
 			cmd = 'power_down';			
-			power = power - 1;
-			plot.series[1].update({ data : [[power, 22],[power, 34]]});			
 			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
-				//console.log(String(data));
-				$("#json_res").html($("#json_res").text() + data.res + '\n');
-				var psconsole = $('#json_res');
-				psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+				console_response_msg(data.res);
+				// $("#json_res").html($("#json_res").text() + data.res + '\n');
+				// var psconsole = $('#json_res');
+				// psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 			});
 		}
 		else{
