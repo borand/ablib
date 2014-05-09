@@ -35,7 +35,7 @@ def get_host_ip():
 log = logbook.Logger('vectors01.py')
 redis_host_ip = get_host_ip()
 host_ip       = get_host_ip()
-redis_pubsub_channel = 'rtweb'
+redis_pubsub_channel = 'ngm'
 
 c = tornadoredis.Client(host=redis_host_ip)
 c.connect()
@@ -68,7 +68,12 @@ class VoaHandler(tornado.web.RequestHandler):
         msg = sj.dumps({'id' : 'launch_power', 'val' : float(power)})
         c.publish(redis_pubsub_channel,msg)
         self.write(msg)
-        
+
+class QHandler(tornado.web.RequestHandler):
+    def get(self, q1, q2):        
+        msg = '[%s, %s]' % (q1, q2)
+        c.publish('rtweb',msg)
+        self.write(msg)        
         
 class NewMessageHandler(tornado.web.RequestHandler):
     def post(self):
@@ -118,6 +123,7 @@ application = tornado.web.Application([
     (r'/cmd/', CmdHandler),
     (r'/msg', NewMessageHandler),
     (r'/ber/(?P<ber1>0.\d+)/(?P<ber2>0.\d+)', BerHandler),
+    (r'/q/(?P<q1>\d+.\d+)/(?P<q1>\d+.\d+)', QHandler),
     (r'/voa/(?P<power>-*\d+.\d+)', VoaHandler),
     (r'/websocket', MessageHandler),
     ],

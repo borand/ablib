@@ -14,7 +14,7 @@ var card_2_const;
 //
 //
 function dbg(message) {
-	console.log(message);
+	//console.log(message);
 	show_server_msg(message);
 }
 
@@ -204,20 +204,23 @@ function draw_const_plot(render_to) {
 
 function add_measurement(value){
 	var t = (new Date()).getTime();
-	for (i=0;i<value.length;i++){
-		series = chart.series[i];
-		series.addPoint([t, value[i]], true, true);	
-	}
+	
+	series = card_1_chart.series[0];
+	series.addPoint([t, value[0]], true, true);
+	
+	series = card_2_chart.series[0];
+	series.addPoint([t, value[1]], true, true);
 }
 
 function update_const_plot(plot_id, data) {	
+	dbg(update_const_plot + "(" + plot_id + ")");	
 	switch(plot_id) {
-		case 'constl_plot_1': {
-			constl_plot_1.series[0].update({ data : data});
+		case '1': {
+			card_1_const.series[0].update({ data : data});
 			break;
 		}
-		case 'constl_plot_2': {
-			constl_plot_2.series[0].update({ data : data});
+		case '2': {
+			card_2_const.series[0].update({ data : data});
 			break;
 		}
 		default:
@@ -262,7 +265,7 @@ function open_websocket(hostname, hostport, hosturl) {
 						add_measurement(JsonData.val);
 						break;
 					}
-					case 'const':{	
+					case 'const':{
 						update_const_plot(JsonData.val.id, JsonData.val.data);
 						break;
 					}
