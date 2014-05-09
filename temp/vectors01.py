@@ -61,6 +61,14 @@ class BerHandler(tornado.web.RequestHandler):
         msg = sj.dumps({'id' : 'chart', 'val' : [float(ber1), float(ber2)]})
         c.publish(redis_pubsub_channel,msg)
         self.write(msg)
+
+class ConstHandler(tornado.web.RequestHandler):
+    def get(self, vect):
+        msg = '{\"id\" : \"const\", \"val\" : %s }' % vect
+        c.publish(redis_pubsub_channel,msg)
+        #self.write_message(msg)
+        msg = 'ok'
+        self.write(msg)
         
 
 class VoaHandler(tornado.web.RequestHandler):
@@ -87,7 +95,6 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
     def __init__(self, *args, **kwargs):
         super(MessageHandler, self).__init__(*args, **kwargs)
         self.listen()
-        
 
     @tornado.gen.engine
     def listen(self):
@@ -125,10 +132,12 @@ application = tornado.web.Application([
     (r'/ber/(?P<ber1>0.\d+)/(?P<ber2>0.\d+)', BerHandler),
     (r'/q/(?P<q1>\d+.\d+)/(?P<q2>\d+.\d+)', QHandler),
     (r'/voa/(?P<power>-*\d+.\d+)', VoaHandler),
+    (r'/const/(?P<vect>.*)', ConstHandler),
     (r'/websocket', MessageHandler),
     ],
     template_path=os.path.join(os.path.dirname(__file__), "templates"),
     static_path=os.path.join(os.path.dirname(__file__), "static"),
+    #debug=False,
     debug=True,
     )
 

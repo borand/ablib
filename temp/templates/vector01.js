@@ -25,12 +25,6 @@ function show_server_msg(message) {
 	}
 }
 
-function console_response_msg(message) {	
-	$("#json_res").html($("#json_res").text() + "cmd [" + message[1] + "]: " + message[2].data + '\n');
-	var psconsole = $('#json_res');
-	psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
-}
-
 function set_object_value(id, val){
 	var datarole = $("#"+id).attr('data-role');
 	dbg('id:' + id + " data-role: " + datarole + "  val: " + val);
@@ -147,7 +141,7 @@ function draw_chart(render_to) {
 	return chart;
 }
 
-function draw_plot_2(render_to) {
+function draw_constl_plot(render_to) {
 	plot2 = new Highcharts.Chart({
 		chart : {
 			renderTo : render_to,
@@ -200,28 +194,6 @@ function draw_plot_2(render_to) {
 		}]
 	});
 	return plot2;
-}
-
-function draw_heatmap(render_to) {
-	chart = new Highcharts.Char({
-		chart : {
-			renderTo : render_to,
-			type : 'heatmap',
-			marginTop : 40,
-			marginBottom : 40,
-		},
-
-		colorAxis : {
-			min : 0,
-			minColor : '#FFFFFF',
-			maxColor : Highcharts.getOptions().colors[0]
-		},
-
-		series : [{
-			data : [[0, 0, 10], [0, 1, 19], [0, 2, 8], [0, 3, 24]],
-		}]
-	});
-	return chart;
 }
 
 function draw_plot(render_to) {
@@ -322,16 +294,12 @@ function open_websocket(hostname, hostport, hosturl) {
 			if (JsonData.hasOwnProperty('id')) {
 				//console.log(JsonData.id);
 				switch(JsonData.id)
-				{
-					case 'console':{
-						console_response_msg(JsonData.val);
-						break;
-					}
+				{	
 					case 'chart':{
 						add_measurement(JsonData.val);
 						break;
 					}
-					case 'const':{	
+					case 'const':{						
 						update_const_plot(JsonData.val.id, JsonData.val.data);
 						break;
 					}
@@ -387,61 +355,25 @@ $(document).ready(function() {
 	debug_js        = $('#debug_js').prop("checked");
 	debug_all       = $('#debug_all').prop("checked");
 	
-	$( "#radio-websocket-online" ).prop( "checked", false ).checkboxradio( "refresh" );
-	
-	$('#json_res').attr('style', 'background-color:White; font-size:14px; height: 20em;');
-	$('#json_res').textinput("option", "autogrow", false);
-	//$('#launch_power').​​​attr('style', 'background-color:White; font-size:14px; width: 5em;');
-
+	$( "#radio-websocket-online" ).prop( "checked", false ).checkboxradio( "refresh" );	
 	$('#debug_console').attr('style', 'background-color:White; font-size:14px; height: 20em;');
 	$('#debug_console').textinput("option", "autogrow", false);
-		
-	$('#server_msg').textinput("option", "autogrow", false);
 	
 	chart         = draw_chart('chart');
 	plot          = draw_plot('power_plot');
-	constl_plot_1 = draw_plot_2('constl_plot_1');
-	constl_plot_2 = draw_plot_2('constl_plot_2');
+	constl_plot_1 = draw_constl_plot('constl_plot_1');
+	constl_plot_2 = draw_constl_plot('constl_plot_2');
 	connect_to_websocket_host();
 	
-	///////////////////////////////////////////////////////////////////////
-	$('#json_cmd').keydown(function(e) {
-		if (e.keyCode == 13) {
-			var cmd = $("#json_cmd").val();
-			$(this).val("");
-			if (cmd == "clc") {
-				console.log('Clear screen');
-				$("#json_res").text("");
-			} else {
-				if (cmd == '') {
-					console.log('Sending empty command');
-					cmd = ' ';
-				} else {
-					console.log('Sending command: ' + cmd);
-				}
-
-				$("#json_res").append("cmd>" + cmd + "\n");
-
-				$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
-					//console.log(String(data));
-					$("#json_res").html($("#json_res").text() + data.res + '\n');					
-					var psconsole = $('#json_res');
-					psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
-				});
-			}
-		}
+	///////////////////////////////////////////////////////////////////////				
+	$.getJSON('/cmd/', "cmd=get_power", function(data) {
+		console_response_msg(data.res);
 	});
-
+	
 	///////////////////////////////////////////////////////////////////////
 	//
 	// BUTTONS
 	//
-	$(".custom").change(function() {	
-		debug_all = $( "#debug_all" ).prop("checked");
-		dbg("debug_all = " + debug_all);
-		//alert( "Handler for .change() called." );
-		//$("#debug_all").prop("checked", true).checkboxradio("refresh");
-	});
 
 	$("#button_connect").click(function() {	
 		connect_to_websocket_host();
@@ -456,10 +388,7 @@ $(document).ready(function() {
 			dbg("button_power_up");
 			cmd = 'power_up';
 			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
-				console_response_msg(data.res);				
-				// $("#json_res").html($("#json_res").text() + data.res + '\n');
-				// var psconsole = $('#json_res');
-				// psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+				console_response_msg(data.res);
 			});
 		}
 		else{
@@ -473,9 +402,6 @@ $(document).ready(function() {
 			cmd = 'power_down';			
 			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
 				console_response_msg(data.res);
-				// $("#json_res").html($("#json_res").text() + data.res + '\n');
-				// var psconsole = $('#json_res');
-				// psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 			});
 		}
 		else{

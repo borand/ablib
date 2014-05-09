@@ -34,9 +34,6 @@
 							<a href="#tab_plot" data-icon="grid">CONSTELLATIONS</a>
 						</li>
 						<li>
-							<a href="#tab_console" data-icon="comment">Console</a>
-						</li>
-						<li>
 							<a href="#tab_debug" data-icon="comment">Debug</a>
 						</li>
 						<li>
@@ -97,7 +94,7 @@
 
 						<div class="ui-corner-all custom-corners">
 							<div class="ui-bar ui-bar-a">
-								<h3>Plot</h3>
+								<h3>Constellation Plot</h3>
 							</div>
 							<div class="ui-body ui-body-a">
 								<!-- ######################################################################## -->
@@ -119,22 +116,6 @@
 
 					</div><!-- TAB PLOT -->
 					<!-- ######################################################################## -->
-					<!-- TAB CONSOLE -->
-					<div id="tab_console">
-						<div class="ui-corner-all custom-corners">
-							<div class="ui-bar ui-bar-a">
-								<h3>Console view</h3>
-							</div>
-							<div class="ui-body ui-body-a">
-								<!-- <div data-role="content"> -->
-								<label for="textarea">Response</label>
-								<textarea rows="15" name="textarea" id="json_res" data-role="textarea" type="etc."></textarea>
-								<label for="text-basic">Command</label>
-								<input type="text" name="text-basic" id="json_cmd" value="">
-							</div><!-- /content -->
-						</div>
-					</div><!-- TAB CONSOLE -->
-					<!-- ######################################################################## -->
 					<!-- TAB DEBUG -->
 					<div id="tab_debug">
 						<div class="ui-corner-all custom-corners">
@@ -151,20 +132,26 @@
 							</div><!-- /content -->
 
 							<div class="ui-bar ui-bar-a">
-								<h3>Etc</h3>
+								<h3>Settings Settings</h3>
 							</div>
+							
+							
 							<div class="ui-body ui-body-a">
 								<!-- ######################################################################## -->
-								<form>
-									<label for="adc">id = adc</label>
-									<input name="slider-2" id="adc" data-highlight="true" min="0" max="100" value="50" type="range" data-role="slider">
-								</form>
-
-								<label for="flip">id = flip</label>
-								<select type="checkbox" id="flip" data-role="flipswitch" data-wrapper-class="custom-size-flipswitch">
-									<option value="off">Off</option>
-									<option value="on">On</option>
-								</select>								
+						<div class="ui-field-contain">
+									<fieldset data-role="controlgroup" data-type="horizontal">
+										<legend>
+											Debug Settings
+										</legend>
+										<input type="checkbox" name="checkbox-6" id="debug_websocket" class="custom">
+										<label for="debug_websocket">Websocket</label>
+										<input type="checkbox" name="checkbox-7" id="debug_js" class="custom">
+										<label for="debug_js"><em>Browser</em></label>
+										<input type="checkbox" name="checkbox-8" id="debug_all" class="custom">
+										<label for="debug_all">All</label>
+									</fieldset>
+								</div>
+							
 								<!-- ######################################################################## -->
 							</div>
 
@@ -207,19 +194,7 @@
 							</div>
 							<div class="ui-body ui-body-a">
 
-								<div class="ui-field-contain">
-									<fieldset data-role="controlgroup" data-type="horizontal">
-										<legend>
-											Debug Settings
-										</legend>
-										<input type="checkbox" name="checkbox-6" id="debug_websocket" class="custom">
-										<label for="debug_websocket">Websocket</label>
-										<input type="checkbox" name="checkbox-7" id="debug_js" class="custom">
-										<label for="debug_js"><em>Browser</em></label>
-										<input type="checkbox" name="checkbox-8" id="debug_all" class="custom">
-										<label for="debug_all">All</label>
-									</fieldset>
-								</div>
+								
 
 								<div class="ui-field-contain">
 									<fieldset data-role="controlgroup" data-type="horizontal">
