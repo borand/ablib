@@ -44,7 +44,7 @@ c.connect()
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         # print(self.request)        
-        self.render("subvector01.html", title="Vectors 2014", host_ip=host_ip, page_title='Vectors 2014')
+        self.render("vector01.html", title="Vectors 2014", host_ip=host_ip, page_title='Vectors 2014')
         
 
 class CmdHandler(tornado.web.RequestHandler):
@@ -123,7 +123,7 @@ application = tornado.web.Application([
     (r'/cmd/', CmdHandler),
     (r'/msg', NewMessageHandler),
     (r'/ber/(?P<ber1>0.\d+)/(?P<ber2>0.\d+)', BerHandler),
-    (r'/q/(?P<q1>\d+.\d+)/(?P<q1>\d+.\d+)', QHandler),
+    (r'/q/(?P<q1>\d+.\d+)/(?P<q2>\d+.\d+)', QHandler),
     (r'/voa/(?P<power>-*\d+.\d+)', VoaHandler),
     (r'/websocket', MessageHandler),
     ],

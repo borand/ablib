@@ -1,6 +1,6 @@
 var debug_websocket = false;
 var debug_js = true;
-var debug_all = false;
+var debug_all = true;
 var plot_height = 600;
 var chart;
 var plot;
@@ -106,7 +106,7 @@ function draw_chart(render_to) {
 				text : 'BER'
 			},
 			max : 0.034,
-			min : 0.005,			
+			min : 0.005,
 		},
 		
 		series : [{
@@ -156,7 +156,7 @@ function draw_plot_2(render_to) {
 			height : plot_height,			
 		},
 		title : {
-			text : 'Flex 3'
+			text : ''
 		},
 		subtitle : {
 			text : ''
@@ -166,35 +166,36 @@ function draw_plot_2(render_to) {
 				enabled : true,
 				text : 'I'
 			},
-			startOnTick : true,
-			endOnTick : true,
+			//startOnTick : true,
+			//endOnTick : true,
 			showLastLabel : true,
-			min : -255,
-			max : 255,
+			min : -250,
+			max : 250,
 		},
 		yAxis : {
 			title : {
 				text : 'Q'
 			},
-			min : -255,
-			max : 255,			
+			min : -250,
+			max : 250,			
 		},		
 		plotOptions : {
 			scatter : {
 				marker : {
-					radius : 3,					
+					radius : 4,					
 				},
 			}
 		},
 		series : [{
 			name : 'X-POL',
 			color : 'rgba(255, 0, 0, .5)',
-			data : [[0, 0]]
-
-		}, {
+			//data : [[75, 75],[75, 150], [150, 75],[150, 150]],
+			data : [[0,0]],
+		},{
 			name : 'Y-POL',
 			color : 'rgba(0, 0, 255, .5)',
-			data : [[0, 1]]
+			//data : [[75, 75],[75, 150], [150, 75],[150, 150]],
+			data : [[0,0]],
 
 		}]
 	});
@@ -237,12 +238,12 @@ function draw_plot(render_to) {
 				
 		xAxis : {
 			title : {
-				enabled : true,
+				//enabled : true,
 				text : 'Launch Power [dBm]'
 			},
 			startOnTick : true,
 			endOnTick : true,
-			showLastLabel : true
+			//showLastLabel : true
 		},
 		yAxis : {
 			title : {
@@ -252,12 +253,12 @@ function draw_plot(render_to) {
 			max : 34,			
 		},		
 		series : [{
-			name : 'Flex 3',
+			name : 'OSNR',
 			color : 'rgba(223, 83, 83, .5)',
 			data : [[-7.3, 22.6],[-5.9, 24.5],[-4.7, 25.8],[-3.6, 26.9],[-2.6, 27.8],[-1.6, 28.6],[-0.6, 29.5],[0.4, 30.3],[1.4, 31.0],[2.4, 31.7],[3.4, 32.3],[4.3, 32.9],[5.4, 33.4]],
 
 		},{
-			name : 'Power',			
+			name : 'Current Launch Power',			
 			// data : [[power, 0],[power, 6]]
 			data : [[power, 22],[power, 34]]
 		}]
@@ -274,9 +275,11 @@ function add_measurement(value){
 }
 
 function update_const_plot(plot_id, data) {	
+	dbg('update_const_plot(' + plot_id + ")");
 	switch(plot_id) {
 		case 'constl_plot_1': {
-			constl_plot_1.series[0].update({ data : data});
+			dbg('   case: constl_plot_1');
+			constl_plot_1.series[0].update({ data : data});			
 			break;
 		}
 		case 'constl_plot_2': {
