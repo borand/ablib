@@ -11,6 +11,7 @@ var constl_plot_2;
 // UTILITY FUNCTIONS
 //
 //
+
 function dbg(message) {
 	console.log(message);
 	show_server_msg(message);
@@ -349,6 +350,8 @@ function connect_to_websocket_host(){
 //
 $(document).ready(function() {
 
+	$("#underline").append("<img id='underline' src='static/line.jpg'/>");
+	$("#page_header").css("background-color",'#C71C2C');
 	dbg('Document ready');
 
 	debug_websocket = $('#debug_websocket').prop("checked");
@@ -359,6 +362,7 @@ $(document).ready(function() {
 	$('#debug_console').attr('style', 'background-color:White; font-size:14px; height: 20em;');
 	$('#debug_console').textinput("option", "autogrow", false);
 	
+
 	chart         = draw_chart('chart');
 	plot          = draw_plot('power_plot');
 	constl_plot_1 = draw_constl_plot('constl_plot_1');
