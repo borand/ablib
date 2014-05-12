@@ -32,8 +32,7 @@
 		        	data.addColumn('number', 'col'+i);
 				}
 				
-		        data.addRows(numRows);
-				var d = 360 / numRows;
+		        data.addRows(numRows);				
 				var idx = 0;
 				
 				for (var i = 0; i < numRows; i++) 
@@ -42,7 +41,7 @@
 					{
 						var value = cnst[i][j];
 						data.setValue(i, j, (value - 128)/100);
-						tooltipStrings[idx] = "x:" + i + ", y:" + j + " = " + value;
+						tooltipStrings[idx] = "I:" + i + ", Q:" + j + " = " + value;
 						idx++;
 					}
 				}
