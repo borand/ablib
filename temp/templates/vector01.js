@@ -129,7 +129,7 @@ function draw_chart(render_to) {
 				// generate an array of random data
 				var data = [], time = (new Date()).getTime(), i;
 
-				for( i = -99; i <= 0; i++) {
+				for( i = -200; i <= 0; i++) {
 					data.push([
 						time + i * 1000,
 						0.0
@@ -222,7 +222,7 @@ function draw_plot(render_to) {
 			title : {
 				text : 'OSNR [dB]'
 			},
-			min : 22,
+			min : 20,
 			max : 34,			
 		},		
 		series : [{
@@ -335,6 +335,7 @@ function open_websocket(hostname, hostport, hosturl) {
 	ws.onclose = function() {
 		dbg('closing websockets');
 		$('#live').text('OFFLINE');
+		$("#live").css("background-color",'#C71C2C');
 	};
 }
 
@@ -362,6 +363,10 @@ $(document).ready(function() {
 	$( "#radio-websocket-online" ).prop( "checked", false ).checkboxradio( "refresh" );	
 	$('#debug_console').attr('style', 'background-color:White; font-size:14px; height: 20em;');
 	$('#debug_console').textinput("option", "autogrow", false);
+	$("#live").css("background-color",'#C71C2C');
+	
+	$('#button_power_up').hide();
+	$('#button_power_down').hide();
 	
 	//$("#button_power_up").button("disable");
 	//$( "#button_power_down" ).button("option", "disabled",true);
@@ -417,6 +422,16 @@ $(document).ready(function() {
 		}
 		});
 
+		$("#power_control_enabled").click(function(){
+		if ($('#power_control_enabled').prop("checked")) {
+			$('#button_power_up').show();
+			$('#button_power_down').show();
+		} else {
+			$('#button_power_up').hide();
+			$('#button_power_down').hide();
+		}
+
+	})
 	function SendCmd(cmd, val) {
 		return $.getJSON('/cmd/', "cmd=" + cmd + "&param=" + val, function(data) {			
 			$("#cmd_status").text(data.cmd);

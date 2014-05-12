@@ -44,7 +44,7 @@ c.connect()
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         # print(self.request)        
-        self.render("vector01.html", title="Vectors 2014", host_ip=host_ip, page_title='Vectors 2014',redis_pubsub_channel=redis_pubsub_channel)
+        self.render("vector02.html", title="Vectors 2014", host_ip=host_ip, page_title='Vectors 2014',redis_pubsub_channel=redis_pubsub_channel)
 
 class TestAreaHandler(tornado.web.RequestHandler):
     def get(self):

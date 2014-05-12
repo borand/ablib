@@ -1221,9 +1221,9 @@ greg.ross.visualisation.Tooltip = function(useExplicitPositions){
 //greg.ross.visualisation.JSSurfacePlot.DEFAULT_Z_ANGLE = 47;
 greg.ross.visualisation.JSSurfacePlot.DEFAULT_X_ANGLE = 0;
 greg.ross.visualisation.JSSurfacePlot.DEFAULT_Z_ANGLE = 0;
-greg.ross.visualisation.JSSurfacePlot.DATA_DOT_SIZE = 3;
-greg.ross.visualisation.JSSurfacePlot.DEFAULT_SCALE = 350;
-greg.ross.visualisation.JSSurfacePlot.MIN_SCALE = 50;
-greg.ross.visualisation.JSSurfacePlot.MAX_SCALE = 1100;
+greg.ross.visualisation.JSSurfacePlot.DATA_DOT_SIZE = 4;
+greg.ross.visualisation.JSSurfacePlot.DEFAULT_SCALE = 400;
+greg.ross.visualisation.JSSurfacePlot.MIN_SCALE = 0;
+greg.ross.visualisation.JSSurfacePlot.MAX_SCALE = 100;
 greg.ross.visualisation.JSSurfacePlot.SCALE_FACTOR = 1.4;
 

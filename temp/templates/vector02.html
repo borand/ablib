@@ -5,25 +5,17 @@
 		<title>D08 - Vectors 2014</title>				
 		<meta name="viewport" content="width=device-width, initial-scale=1"/>
 		
-		<link rel="stylesheet" href="static/themes/cien.min.css" />
-		<link rel="stylesheet" href="static/themes/jquery.mobile.icons.min.css" />		
 		<link rel="stylesheet" href="static/jquery.mobile-1.4.2.min.css" />
-
-<!-- 
-		<link rel="stylesheet" href="static/themes/cien.min.css" />
-		<link rel="stylesheet" href="static/themes/jquery.mobile.icons.min.css" />
-		<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.2/jquery.mobile.structure-1.4.2.min.css" />
-		<script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
-		<script src="http://code.jquery.com/mobile/1.4.2/jquery.mobile-1.4.2.min.js"></script>
-
- -->
 		<script src="static/jquery-2.1.1.min.js"></script>
 		<script src="static/jquery.mobile-1.4.2.min.js"></script>
 		<script src="static/highstock.js"></script>
-
+		
+		<script type="text/javascript" src='static/SurfacePlot.js'></script>
+		<script type="text/javascript" src='static/ColourGradient.js'></script>
+		<script type="text/javascript" src="http://www.google.com/jsapi"></script>
 
 		<script  type="text/javascript">
-			{% include "vector01.js" %}
+			{% include "vector02.js" %}
 		</script>
 	</head>
 	<body>
@@ -120,6 +112,13 @@
 										<div class="ui-bar ui-bar-a">
 												<div id="constl_plot_2"></div>
 										</div>
+										<form>
+											<input data-inline="true" value="Input" type="button">
+											<div class="ui-input-btn ui-btn ui-btn-inline">
+												Enhanced
+												<input data-enhanced="true" value="Enhanced" type="button" id="const_rotate">
+											</div>
+										</form>
 									</div>
 								</div><!-- /grid-a -->
 								<!-- ######################################################################## -->
