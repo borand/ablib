@@ -44,8 +44,12 @@ c.connect()
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         # print(self.request)        
-        self.render("vector01.html", title="Vectors 2014", host_ip=host_ip, page_title='Vectors 2014')
-        
+        self.render("vector01.html", title="Vectors 2014", host_ip=host_ip, page_title='Vectors 2014',redis_pubsub_channel=redis_pubsub_channel)
+
+class TestAreaHandler(tornado.web.RequestHandler):
+    def get(self):
+        # print(self.request)        
+        self.render("test.html")        
 
 class CmdHandler(tornado.web.RequestHandler):
     def get(self):
@@ -129,6 +133,7 @@ application = tornado.web.Application([
     (r'/', MainHandler),
     (r'/cmd/', CmdHandler),
     (r'/msg', NewMessageHandler),
+    (r'/test', TestAreaHandler),
     (r'/ber/(?P<ber1>0.\d+)/(?P<ber2>0.\d+)', BerHandler),
     (r'/q/(?P<q1>\d+.\d+)/(?P<q2>\d+.\d+)', QHandler),
     (r'/voa/(?P<power>-*\d+.\d+)', VoaHandler),

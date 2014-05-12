@@ -285,6 +285,7 @@ function open_websocket(hostname, hostport, hosturl) {
 	ws.onopen = function() {
 		dbg('web socket open');
 		$('#live').text('CONNECTED');
+		$("#live").css("background-color",'#B2BB1E');
 	};
 
 	ws.onmessage = function(event) {
@@ -351,7 +352,7 @@ function connect_to_websocket_host(){
 $(document).ready(function() {
 
 	$("#underline").append("<img id='underline' src='static/line.jpg'/>");
-	$("#page_header").css("background-color",'#C71C2C');
+	//$("#page_header").css("background-color",'#C71C2C');
 	dbg('Document ready');
 
 	debug_websocket = $('#debug_websocket').prop("checked");
@@ -361,6 +362,9 @@ $(document).ready(function() {
 	$( "#radio-websocket-online" ).prop( "checked", false ).checkboxradio( "refresh" );	
 	$('#debug_console').attr('style', 'background-color:White; font-size:14px; height: 20em;');
 	$('#debug_console').textinput("option", "autogrow", false);
+	
+	//$("#button_power_up").button("disable");
+	//$( "#button_power_down" ).button("option", "disabled",true);
 	
 
 	chart         = draw_chart('chart');
