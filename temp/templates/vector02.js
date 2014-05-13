@@ -168,14 +168,14 @@ function reset_surface_plot(SurfacePlot, surface_plot_matrix) {
 }
 function draw_surface_plot(SurfacePlot, surface_plot_matrix,cnst) {		
 	
-	var idx = 0;	
+	//var idx = 0;	
 	for (var i = 0; i < surface_size; i++) {
 		for (var j = 0; j < surface_size; j++) {
 			var value = cnst[i][j];
 			var current_value = surface_plot_matrix.getValue(i, j);
-			surface_plot_matrix.setValue(i, j, current_value + value / 100);
-			tooltipStrings[idx] = "I:" + i + ", Q:" + j + " = " + value;
-			idx++;
+			surface_plot_matrix.setValue(i, j, current_value + value / 10);
+			//tooltipStrings[idx] = "I:" + i + ", Q:" + j + " = " + value;
+			//idx++;
 		}
 	}
 	SurfacePlot.draw(surface_plot_matrix, surface_plot_options);
@@ -355,18 +355,18 @@ function draw_plot(render_to) {
 			title : {
 				text : 'OSNR [dB]'
 			},
-			min : 20,
-			max : 34,			
+			min : 18,
+			max : 30,			
 		},		
 		series : [{
 			name : 'OSNR',
 			color : 'rgba(223, 83, 83, .5)',
-			data : [[-7.3, 22.6],[-5.9, 24.5],[-4.7, 25.8],[-3.6, 26.9],[-2.6, 27.8],[-1.6, 28.6],[-0.6, 29.5],[0.4, 30.3],[1.4, 31.0],[2.4, 31.7],[3.4, 32.3],[4.3, 32.9],[5.4, 33.4]],
+			data : [[-7.227642228,18.78005522],[-6.493160923,19.60441204],[-5.840186774,20.23582122],[-5.264737174,20.83486006],[-4.713271089,21.35456673],[-4.18455946,21.86171387],[-3.6673595,22.32129401],[-3.159096758,22.80259139],[-2.656017984,23.24259485],[-2.153269216,23.69902273],[-1.653861978,24.11686369],[-1.137068274,24.59787169],[-0.6267458141,25.0371591],[-0.1084156952,25.49336029],[0.3994961276,25.9214208],[0.9203468169,26.34521812],[1.424615485,26.75987359],[1.921136365,27.1473685],[2.41083256,27.51166033],[2.90704792,27.89087585],[3.399259585,28.24317057]],
 
 		},{
 			name : 'Current Launch Power',			
 			// data : [[power, 0],[power, 6]]
-			data : [[power, 22],[power, 34]]
+			data : [[power, 18],[power, 34]]
 		}]
 	});
 	return plot;
@@ -449,7 +449,7 @@ function open_websocket(hostname, hostport, hosturl) {
 					}
 					case 'launch_power':{
 						power = JsonData.val;
-						plot.series[1].update({ data : [[power, 22],[power, 34]]});
+						plot.series[1].update({ data : [[power, 18],[power, 34]]});
 						break;
 					}					
 					case 'accum':{	
@@ -561,6 +561,8 @@ $(document).ready(function() {
 			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
 				console_response_msg(data.res);
 			});
+			reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
+			reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
 		}
 		else{
 			dbg("Power control disabled");
@@ -574,6 +576,8 @@ $(document).ready(function() {
 			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
 				console_response_msg(data.res);
 			});
+			reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
+			reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
 		}
 		else{
 			dbg("Power control disabled");

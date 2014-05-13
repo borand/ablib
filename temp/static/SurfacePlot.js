@@ -142,8 +142,8 @@ greg.ross.visualisation.JSSurfacePlot = function(x, y, width, height, colourGrad
     }
     
     function displayTooltip(e){
-        var position = new greg.ross.visualisation.Point(e.x, e.y);
-        tTip.show(tooltips[closestPointToMouse], 200);
+        //var position = new greg.ross.visualisation.Point(e.x, e.y);
+        //tTip.show(tooltips[closestPointToMouse], 200);
     }
     
     function render(data){
