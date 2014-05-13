@@ -24,6 +24,7 @@ var surface_plot_2;
 var surface_size = 64;
 var surface_plot_options;
 var surface_plot_matrix;
+var accum_matrix_1 = new Array(64);
 var surface_plot_matrix_1;
 var surface_plot_matrix_2;
 
@@ -91,6 +92,7 @@ function init_surface_plot_options(){
 	var fillPly = true;
 
 	// Define a colour gradient.
+	/*
 	var colour1 = {
 		red : 0,
 		green : 0,
@@ -116,7 +118,35 @@ function init_surface_plot_options(){
 		green : 0,
 		blue : 0
 	};
+	*/
+	var colour1 = {
+		red : 0,
+		green : 0,
+		blue : 0
+	};
+	var colour2 = {
+		red : 0,
+		green : 0,
+		blue : 255
+	};
+	var colour3 = {
+		red : 0,
+		green : 255,
+		blue : 0
+	};
+	var colour4 = {
+		red : 255,
+		green : 255,
+		blue : 0
+	};
+	var colour5 = {
+		red : 255,
+		green : 0,
+		blue : 0
+	};
+//	var colours = [colour1, colour2, colour3, colour4, colour5];
 	var colours = [colour1, colour2, colour3, colour4, colour5];
+
 
 	// Axis labels.
 	var xAxisHeader = "I";
@@ -154,11 +184,12 @@ function add_to_constl(matrix, matrixB){
 	}
 	return matrix;
 }
-function reset_surface_plot(SurfacePlot, surface_plot_matrix) {		
+function reset_surface_plot(SurfacePlot, surface_plot_matrix,accum_matrix) {		
 	
 	var idx = 0;	
 	for (var i = 0; i < surface_size; i++) {
 		for (var j = 0; j < surface_size; j++) {			
+			accum_matrix_1[i][j] = 0;
 			surface_plot_matrix.setValue(i, j, 0);
 			tooltipStrings[idx] = "I:" + i + ", Q:" + j + " = 0";
 			idx++;
@@ -166,19 +197,52 @@ function reset_surface_plot(SurfacePlot, surface_plot_matrix) {
 	}
 	SurfacePlot.draw(surface_plot_matrix, surface_plot_options);
 }
-function draw_surface_plot(SurfacePlot, surface_plot_matrix,cnst) {		
+function draw_surface_plot(SurfacePlot, surface_matrix,accum_matrix,cnst) {	
+	var idx = 0;	
+	var value_norm = 0;
+	var value_new = 0;
+	var value_max = 1;
+	var NORM = 0.3;
 	
-	//var idx = 0;	
+	// increment the values in surface_plot_matrix(which stores the values) and find the maximum values
 	for (var i = 0; i < surface_size; i++) {
-		for (var j = 0; j < surface_size; j++) {
-			var value = cnst[i][j];
-			var current_value = surface_plot_matrix.getValue(i, j);
-			surface_plot_matrix.setValue(i, j, current_value + value / 20);
-			//tooltipStrings[idx] = "I:" + i + ", Q:" + j + " = " + value;
-			//idx++;
+		for (var q = 0; q < surface_size; q++) {
+			if (accum_matrix[i] == null){
+				// initialize the array if required
+				accum_matrix[i] = new Array(surface_size);
+			}
+			
+			if (accum_matrix[i][q] == null)
+				accum_matrix[i][q] = cnst[i][q];
+			else if (cnst[i][q] != 0) {
+				accum_matrix[i][q] += cnst[i][q];
+				
+				if (accum_matrix[i][q] > value_max){
+					// track the maximum value
+					value_max = accum_matrix[i][q];
+				}
+			}
 		}
 	}
-	SurfacePlot.draw(surface_plot_matrix, surface_plot_options);
+	
+	// iterate through all of the values, normalizing to the peak value
+	
+	// initialize storage for each row of x values	
+	for (var i = 0; i < surface_size; i++) {
+		for (var q = 0; q < surface_size; q++) {
+			if (cnst[i][q] != 0) {
+				value_new = accum_matrix[i][q] / value_max;
+				value_norm = value_new * NORM;
+				surface_matrix.setValue(i,q,value_norm);
+				
+				tooltipStrings[idx] = "I:" + i + ", Q:" + q + " = " + value_new;
+				idx++;
+			}
+		}
+	}
+//	error('test')
+	
+	SurfacePlot.draw(surface_matrix, surface_plot_options);
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -355,18 +419,18 @@ function draw_plot(render_to) {
 			title : {
 				text : 'OSNR [dB]'
 			},
-			min : 18,
-			max : 30,			
+			min : 20,
+			max : 34,			
 		},		
 		series : [{
 			name : 'OSNR',
 			color : 'rgba(223, 83, 83, .5)',
-			data : [[-7.227642228,18.78005522],[-6.493160923,19.60441204],[-5.840186774,20.23582122],[-5.264737174,20.83486006],[-4.713271089,21.35456673],[-4.18455946,21.86171387],[-3.6673595,22.32129401],[-3.159096758,22.80259139],[-2.656017984,23.24259485],[-2.153269216,23.69902273],[-1.653861978,24.11686369],[-1.137068274,24.59787169],[-0.6267458141,25.0371591],[-0.1084156952,25.49336029],[0.3994961276,25.9214208],[0.9203468169,26.34521812],[1.424615485,26.75987359],[1.921136365,27.1473685],[2.41083256,27.51166033],[2.90704792,27.89087585],[3.399259585,28.24317057]],
+			data : [[-7.3, 22.6],[-5.9, 24.5],[-4.7, 25.8],[-3.6, 26.9],[-2.6, 27.8],[-1.6, 28.6],[-0.6, 29.5],[0.4, 30.3],[1.4, 31.0],[2.4, 31.7],[3.4, 32.3],[4.3, 32.9],[5.4, 33.4]],
 
 		},{
 			name : 'Current Launch Power',			
 			// data : [[power, 0],[power, 6]]
-			data : [[power, 18],[power, 34]]
+			data : [[power, 22],[power, 34]]
 		}]
 	});
 	return plot;
@@ -397,17 +461,6 @@ function update_const_plot(plot_id, data) {
 		
 	}
 }
-
-function rotate_const_plot(angle) {
-	surface_plot_1.surfacePlot.currentZAngle = angle[0];
-	surface_plot_1.surfacePlot.currentXAngle = angle[1];
-	surface_plot_1.surfacePlot.render();
-
-	surface_plot_2.surfacePlot.currentZAngle = angle[0];
-	surface_plot_2.surfacePlot.currentXAngle = angle[1];
-	surface_plot_2.surfacePlot.render();
-}
-
 
 function parse_message(message_text){
 	var temp;
@@ -452,7 +505,7 @@ function open_websocket(hostname, hostport, hosturl) {
 						cnst   = JsonData.val.data;
 						//console.log(plotid);
 						if(plotid == 1){
-							draw_surface_plot(surface_plot_1, surface_plot_matrix_1, cnst);	
+							draw_surface_plot(surface_plot_1, surface_plot_matrix_1, accum_matrix_1, cnst);	
 						} else {
 							draw_surface_plot(surface_plot_2, surface_plot_matrix_2, cnst);	
 						}
@@ -460,7 +513,7 @@ function open_websocket(hostname, hostport, hosturl) {
 					}
 					case 'launch_power':{
 						power = JsonData.val;
-						plot.series[1].update({ data : [[power, 18],[power, 34]]});
+						plot.series[1].update({ data : [[power, 22],[power, 34]]});
 						break;
 					}					
 					case 'accum':{	
@@ -538,9 +591,8 @@ $(document).ready(function() {
 	surface_plot_options  = init_surface_plot_options();
 	
 	cnst = reset_constl(cnst);
-	draw_surface_plot(surface_plot_1, surface_plot_matrix_1, cnst);
-	cnst = reset_constl(cnst);
-	draw_surface_plot(surface_plot_2, surface_plot_matrix_2, cnst);
+	draw_surface_plot(surface_plot_1, surface_plot_matrix_1, accum_matrix_1, cnst);
+//	draw_surface_plot(surface_plot_2, surface_plot_matrix_2, cnst);
 	//reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
 	//reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
 	//reset_surface_plot(SurfacePlot[0], surface_plot_matrix[0]);
@@ -572,8 +624,6 @@ $(document).ready(function() {
 			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
 				console_response_msg(data.res);
 			});
-			reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
-			reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
 		}
 		else{
 			dbg("Power control disabled");
@@ -587,8 +637,6 @@ $(document).ready(function() {
 			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
 				console_response_msg(data.res);
 			});
-			reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
-			reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
 		}
 		else{
 			dbg("Power control disabled");
@@ -605,21 +653,14 @@ $(document).ready(function() {
 		}
 	});
 
-	$("#const_rotate_xy").click(function(){
-		rotate_const_plot([0,0]);    	
-	});
-	$("#const_rotate_xz").click(function(){
-		rotate_const_plot([0,90]);    	
-	});
-	$("#const_rotate_default").click(function(){
-		rotate_const_plot([45,45]);    	
+	$("#const_rotate").click(function(){
+		data_surf.rotate(90,0,0);
 	});
 
 	
 	$("#constellation_tab_button").click(function(){
 		dbg('constellation_tab_button clicked');
-		reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
-		reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
+		reset_surface_plot(surface_plot_1, surface_plot_matrix_1,accum_matrix_1);
 	});
 
 	//TODO - determine which tab is active
