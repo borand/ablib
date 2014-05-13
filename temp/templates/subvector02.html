@@ -2,43 +2,39 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8"/>
-		<title>D08 - Vectors 2014</title>				
+		<title>Vectors 2014</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1"/>
-		
 		<link rel="stylesheet" href="static/jquery.mobile-1.4.2.min.css" />
 		<script src="static/jquery-2.1.1.min.js"></script>
 		<script src="static/jquery.mobile-1.4.2.min.js"></script>
-		<script src="static/highstock.js"></script>
-		
+		<script src="static/highstock.js"></script>		
 		<script type="text/javascript" src='static/SurfacePlot.js'></script>
 		<script type="text/javascript" src='static/ColourGradient.js'></script>
-
 		<script type="text/javascript" src="static/jsapi"></script>
-		<!-- 
-		<script type="text/javascript" src="http://www.google.com/jsapi"></script>
- -->
+
 		<script  type="text/javascript">
-			{% include "vector02.js" %}
+			{% include "subvector02.js" %}
 		</script>
 	</head>
 	<body>
 
 		<div data-role="page" id="page1">
 
-			<div data-role="header" style="overflow:hidden;" data-theme="b" id="page_header" style="background: green; color: white;">
-				<h1 id="headeer_status">Advanced Testbed Demo D08 - Vectors 2014</h1>
-				<a class="ui-btn-right" id="live" data-theme="b">OFFLINE</a>
+			<div data-role="header" style="overflow:hidden;" data-theme="b">
+				<h1 id="headeer_status">Vectors 2014</h1>
+				<a class="ui-btn-right" id="live" data-theme="a">OFFLINE</a>
 			</div>
 
 			<div data-role="tabs"  data-theme="a">
+
 				<div data-role="navbar">
 					<ul>
 						<li>
-							<a href="#tab_main" data-icon="grid" class="ui-btn-active">BER</a>
+							<a href="#tab_main" data-icon="grid" class="ui-btn-active">Card 1</a>
 						</li>
 						<li>
-							<a href="#tab_plot" data-icon="grid">CONSTELLATIONS</a>
-						</li>
+							<a href="#tab_plot" data-icon="grid">Card 2</a>
+						</li>						
 						<li>
 							<a href="#tab_debug" data-icon="comment">Debug</a>
 						</li>
@@ -52,45 +48,30 @@
 					<!-- TAB MAIN -->
 					<div id="tab_main">
 
-						<div class="ui-corner-all custom-corners" data-theme="b">
-							<div class="ui-bar ui-bar-a" data-theme="b">
-								<h3>Realtime Plot</h3>
+						<div class="ui-corner-all custom-corners">
+							<div class="ui-bar ui-bar-a">
+								<h3>Card 1</h3>
 							</div>
 							<div class="ui-body ui-body-a">
 								<!-- ######################################################################## -->
 								<div class="ui-grid-a">
 									<div class="ui-block-a">
-										<div class="ui-bar ui-bar-a">
-											<div id="chart"></div>
+										<div class="ui-bar ui-bar-a" style="text-align:center;" >
+											<div id="card_1_chart"></div>
 										</div>
 									</div>
 									<div class="ui-block-b">
-										<div class="ui-bar ui-bar-a">
-											<div id="power_plot"></div>
-										</div>										
-									</div>
-								</div><!-- /grid-a -->
+										<div class="ui-bar ui-bar-a" style="text-align:center;" >
+											<div id="card_1_const"></div>
+											<a class="ui-btn ui-btn-inline" id="clear_constellations" data-theme="b">Reset</a>
+										</div>
 
-								<div class="ui-grid-a">
-									<div class="ui-block-a">
-										<div class="ui-bar ui-bar-a"></div>
-										
-									</div>
-									<div class="ui-block-b">
-										<div class="ui-bar ui-bar-a">
-											<a data-role="button" data-inline="true" data-theme="b"  data-icon="arrow-l" id="button_power_down">Decrease Launch Power</a>
-											<a data-role="button" data-inline="true" data-theme="b"  data-icon="arrow-r" id="button_power_up">Increase Launch Power</a>
-										</div>
 									</div>
 								</div><!-- /grid-a -->
 
 								<!-- ######################################################################## -->
 							</div>
-						</div>
-						<div class="ui-body ui-body-a">
-							<!-- 							<a data-role="button" class="ui-btn ui-btn-inline ui-icon-arrow-u ui-btn-icon-left" data-theme="b" id="button_power_up">Power UP</a> -->
-							<!-- 							<a data-role="button" class="ui-btn ui-btn-inline ui-icon-arrow-d ui-btn-icon-left" data-theme="b" id="button_power_down">Power DOWN</a> -->
-						</div>
+						</div>						
 
 					</div><!-- TAB MAIN -->
 					<!-- ######################################################################## -->
@@ -99,36 +80,27 @@
 
 						<div class="ui-corner-all custom-corners">
 							<div class="ui-bar ui-bar-a">
-								<h3>Constellation Plot</h3>
+								<h3>Plot</h3>
 							</div>
 							<div class="ui-body ui-body-a">
 								<!-- ######################################################################## -->
 								<div class="ui-grid-a">
-									<div class="ui-block-a">										
-										<div class="ui-bar ui-bar-a" style="text-align:center;" id="surf_plot_group1">
-												<h1>Production WL3 Flex 3</h1>
-												<div id="constl_plot_1"></div>
+									<div class="ui-block-a">
+										<div class="ui-bar ui-bar-a"  style="text-align:center;" >
+												<div id="card_2_chart"></div>
 										</div>
 									</div>
-									<div class="ui-block-b">										
-										<div class="ui-bar ui-bar-a" style="text-align:center;"  id="surf_plot_group2">
-											<h1>Nonlinear Compensated WL3 Flex 3</h1>
-												<div id="constl_plot_2"></div>
-										</div>										
+									<div class="ui-block-b">
+										<div class="ui-bar ui-bar-a"  style="text-align:center;" >
+												<div id="card_2_const"></div>
+										</div>
 									</div>
-									<form>
-											<input data-inline="true" value="Clear" type="button" id="constellation_tab_button">
-											<div class="ui-input-btn ui-btn ui-btn-inline">
-												Rotate View
-												<input data-enhanced="true" value="rotate_view" type="button" id="const_rotate">
-											</div>
-										</form>
 								</div><!-- /grid-a -->
 								<!-- ######################################################################## -->
 							</div>
 						</div>
 
-					</div><!-- TAB PLOT -->
+					</div><!-- TAB PLOT -->					
 					<!-- ######################################################################## -->
 					<!-- TAB DEBUG -->
 					<div id="tab_debug">
@@ -146,14 +118,11 @@
 							</div><!-- /content -->
 
 							<div class="ui-bar ui-bar-a">
-								<h3>Settings Settings</h3>
+								<h3>Etc</h3>
 							</div>
-							
-							
 							<div class="ui-body ui-body-a">
 								<!-- ######################################################################## -->
-						<div class="ui-field-contain">
-									<fieldset data-role="controlgroup" data-type="horizontal" data-theme="b">
+								<fieldset data-role="controlgroup" data-type="horizontal">
 										<legend>
 											Debug Settings
 										</legend>
@@ -163,9 +132,7 @@
 										<label for="debug_js"><em>Browser</em></label>
 										<input type="checkbox" name="checkbox-8" id="debug_all" class="custom">
 										<label for="debug_all">All</label>
-									</fieldset>
-								</div>
-							
+									</fieldset>								
 								<!-- ######################################################################## -->
 							</div>
 
@@ -188,7 +155,7 @@
 									</div>
 
 									<div class="ui-block-b">
-										<label for="hostport">Host port</label>
+										<label for="hostport">Host name</label>
 										<input type="number" name="number" pattern="[0-9]*" id="hostport" value="8888" data-mini="true">
 									</div>
 									<div class="ui-block-c">
@@ -197,33 +164,21 @@
 									</div>
 
 								</div><!-- /grid-b -->
-								<label for="hosturl">Redis subscribe channel</label>
-								<input type="text" name="text" id="redis_channel" value="{{redis_pubsub_channel}}" data-mini="true">
-								
-								<label for="hosturl">Redis publish channel</label>
-								<input type="text" name="text" id="redis_channel" value="cmd" data-mini="true">
 							</div>
 
 							<div class="ui-body ui-body-a">
-								<a class="ui-btn ui-btn-inline ui-icon-phone ui-btn-icon-left" id="button_connect" data-theme="b">Connect</a>
+								<a href="#" class="ui-btn ui-btn-inline ui-icon-phone ui-btn-icon-left" id="button_connect">Connect</a>
 							</div>
 
 							<div class="ui-bar ui-bar-a">
-								<h3>Other Settings</h3>
+								<h3>Debug Settings</h3>
 							</div>
 							<div class="ui-body ui-body-a">
 
-								
+								<div class="ui-field-contain">									
+								</div>
 
-								<div class="ui-field-contain">
-									<fieldset data-role="controlgroup" data-type="horizontal">
-										<legend>
-											Hardware Control
-										</legend>
-
-										<input type="checkbox" name="checkbox-8" id="power_control_enabled" class="custom" data-theme="b">
-										<label for="power_control_enabled">Enable Power Control</label>
-									</fieldset>
+								<div class="ui-field-contain">									
 								</div>
 
 							</div>
@@ -235,16 +190,13 @@
 				<!-- ######################################################################## -->
 
 			</div>
-			<div data-role="footer" data-theme="a" data-position="fixed">
-				<div id="underline"> </div>
-			</div>
-			
+<!-- 			<div data-role="footer" data-theme="b"></div> -->
+				<div data-role="footer" data-theme="a" data-position="fixed">
+					<div id="underline"> </div>
+				</div>
 		</div>
-
 		<!-- <div role="main" class="ui-content"> -->
-		<!-- <img border="0" src="static/line.jpg" width="1000" height="18"> -->
-
-		</div>		
-
-	</body>	
+		</div>
+	</body>
+	
 </html>

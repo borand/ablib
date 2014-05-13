@@ -1,18 +1,13 @@
-///////////////////////////////////////////
-// Global variables
-var active_tab;
 var debug_websocket = false;
 var debug_js = true;
-var debug_all = true;
-
-////////////////////////////////////////
-// Chart and plot variables
-var plot_height = 700;
-var chart;
-var plot;
-var power = -5;
-var constl_plot_1;
-var constl_plot_2;
+var debug_all = false;
+var plot_height = 600;
+var card_chart;
+var card_const;	
+var card_1_chart;
+var card_2_chart;
+var card_1_const;
+var card_2_const;
 
 ////////////////////////////////////////
 // 3D Surface Plot
@@ -30,15 +25,15 @@ var surface_plot_matrix_2;
 var tooltipStrings = new Array();
 
 var constl;
-
-///////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 // UTILITY FUNCTIONS
 //
 //
 function dbg(message) {
-	console.log(message);
+	//console.log(message);
 	show_server_msg(message);
 }
+
 function show_server_msg(message) {
 	if (debug_all)
 	{	
@@ -47,6 +42,13 @@ function show_server_msg(message) {
 	    psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
 	}
 }
+
+function console_response_msg(message) {	
+	$("#json_res").html($("#json_res").text() + "cmd [" + message[1] + "]: " + message[2].data + '\n');
+	var psconsole = $('#json_res');
+	psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+}
+
 function set_object_value(id, val){
 	var datarole = $("#"+id).attr('data-role');
 	dbg('id:' + id + " data-role: " + datarole + "  val: " + val);
@@ -68,10 +70,10 @@ function set_object_value(id, val){
 	}
 }
 function SendCmd(cmd, val) {
-	return $.getJSON('/cmd/', "cmd=" + cmd + "&param=" + val, function(data) {			
-		$("#cmd_status").text(data.cmd);
-	});
-}
+		return $.getJSON('/cmd/', "cmd=" + cmd + "&param=" + val, function(data) {			
+			$("#cmd_status").text(data.cmd);
+		});
+	}
 ///////////////////////////////////////////////////////////////////////
 // 3D Surface Plot
 
@@ -234,7 +236,7 @@ function draw_chart(render_to) {
 				text : 'BER'
 			},
 			max : 0.034,
-			min : 0.005,
+			min : 0.005,			
 		},
 		
 		series : [{
@@ -262,7 +264,7 @@ function draw_chart(render_to) {
 				// generate an array of random data
 				var data = [], time = (new Date()).getTime(), i;
 
-				for( i = -200; i <= 0; i++) {
+				for( i = -99; i <= 0; i++) {
 					data.push([
 						time + i * 1000,
 						0.0
@@ -275,8 +277,8 @@ function draw_chart(render_to) {
 	return chart;
 }
 
-function draw_constl_plot(render_to) {
-	plot2 = new Highcharts.Chart({
+function draw_const_plot(render_to) {
+	plot = new Highcharts.Chart({
 		chart : {
 			renderTo : render_to,
 			defaultSeriesType : 'scatter',
@@ -284,7 +286,7 @@ function draw_constl_plot(render_to) {
 			height : plot_height,			
 		},
 		title : {
-			text : ''
+			text : 'Flex 3'
 		},
 		subtitle : {
 			text : ''
@@ -294,79 +296,36 @@ function draw_constl_plot(render_to) {
 				enabled : true,
 				text : 'I'
 			},
-			//startOnTick : true,
-			//endOnTick : true,
+			startOnTick : true,
+			endOnTick : true,
 			showLastLabel : true,
-			min : -250,
-			max : 250,
+			min : -255,
+			max : 255,
 		},
 		yAxis : {
 			title : {
 				text : 'Q'
 			},
-			min : -250,
-			max : 250,			
+			min : -255,
+			max : 255,			
 		},		
 		plotOptions : {
 			scatter : {
 				marker : {
-					radius : 4,					
+					radius : 3,					
 				},
 			}
 		},
 		series : [{
 			name : 'X-POL',
 			color : 'rgba(255, 0, 0, .5)',
-			//data : [[75, 75],[75, 150], [150, 75],[150, 150]],
-			data : [[0,0]],
-		},{
+			data : [[0, 0]]
+
+		}, {
 			name : 'Y-POL',
 			color : 'rgba(0, 0, 255, .5)',
-			//data : [[75, 75],[75, 150], [150, 75],[150, 150]],
-			data : [[0,0]],
+			data : [[0, 1]]
 
-		}]
-	});
-	return plot2;
-}
-
-function draw_plot(render_to) {
-	plot = new Highcharts.Chart({
-		chart : {
-			renderTo : render_to,
-			defaultSeriesType : 'spline',
-			zoomType : 'xy',
-			height : plot_height,			
-		},
-		title : {
-			text : '10 Span TrueWave Classic Link'
-		},
-				
-		xAxis : {
-			title : {
-				//enabled : true,
-				text : 'Launch Power [dBm]'
-			},
-			startOnTick : true,
-			endOnTick : true,
-			//showLastLabel : true
-		},
-		yAxis : {
-			title : {
-				text : 'OSNR [dB]'
-			},
-			min : 20,
-			max : 34,			
-		},		
-		series : [{
-			name : 'OSNR',
-			color : 'rgba(223, 83, 83, .5)',
-			data : [[-7.3, 22.6],[-5.9, 24.5],[-4.7, 25.8],[-3.6, 26.9],[-2.6, 27.8],[-1.6, 28.6],[-0.6, 29.5],[0.4, 30.3],[1.4, 31.0],[2.4, 31.7],[3.4, 32.3],[4.3, 32.9],[5.4, 33.4]],
-
-		},{
-			name : 'Current Launch Power',			
-			// data : [[power, 0],[power, 6]]
-			data : [[power, 22],[power, 34]]
 		}]
 	});
 	return plot;
@@ -374,22 +333,23 @@ function draw_plot(render_to) {
 
 function add_measurement(value){
 	var t = (new Date()).getTime();
-	for (i=0;i<value.length;i++){
-		series = chart.series[i];
-		series.addPoint([t, value[i]], true, true);	
-	}
+	
+	series = card_1_chart.series[0];
+	series.addPoint([t, value[0]], true, true);
+	
+	series = card_2_chart.series[0];
+	series.addPoint([t, value[1]], true, true);
 }
 
 function update_const_plot(plot_id, data) {	
-	dbg('update_const_plot(' + plot_id + ")");
+	dbg(update_const_plot + "(" + plot_id + ")");	
 	switch(plot_id) {
-		case 'constl_plot_1': {
-			dbg('   case: constl_plot_1');
-			constl_plot_1.series[0].update({ data : data});			
+		case '1': {
+			card_1_const.series[0].update({ data : data});
 			break;
 		}
-		case 'constl_plot_2': {
-			constl_plot_2.series[0].update({ data : data});
+		case '2': {
+			card_2_const.series[0].update({ data : data});
 			break;
 		}
 		default:
@@ -398,9 +358,6 @@ function update_const_plot(plot_id, data) {
 	}
 }
 
-function parse_message(message_text){
-	var temp;
-}
 ///////////////////////////////////////////////////////////////////////
 // WEBSOCKETS FUNCTIONS
 //
@@ -429,14 +386,17 @@ function open_websocket(hostname, hostport, hosturl) {
 			if (JsonData.hasOwnProperty('id')) {
 				//console.log(JsonData.id);
 				switch(JsonData.id)
-				{	
+				{
+					case 'console':{
+						console_response_msg(JsonData.val);
+						break;
+					}
 					case 'chart':{
 						add_measurement(JsonData.val);
 						break;
 					}
-					case 'const':{						
-						//update_const_plot(JsonData.val.id, JsonData.val.data);						
-						draw_surface_plot(JsonData.val.data);
+					case 'const':{
+						update_const_plot(JsonData.val.id, JsonData.val.data);
 						break;
 					}
 					case 'launch_power':{
@@ -445,7 +405,7 @@ function open_websocket(hostname, hostport, hosturl) {
 						break;
 					}					
 					case 'accum':{	
-						pdate_const_plot(JsonData.val.id, JsonData.val.data);						
+						//pdate_const_plot(JsonData.val.id, JsonData.val.data);
 						break;
 					}
 					default:{	
@@ -484,35 +444,29 @@ function connect_to_websocket_host(){
 // MAIN GUI - jQUERY
 //
 //
-$(document).ready(function() {	
-	
-	$("#underline").append("<img id='underline' src='static/line.jpg'/>");
-	//$("#page_header").css("background-color",'#C71C2C');
-	$("#surf_plot_group1").css("background-color",'#FFFFFF');
-	$("#surf_plot_group2").css("background-color",'#FFFFFF');
+$(document).ready(function() {
 
 	dbg('Document ready');
-
+	$("#live").css("background-color",'#C71C2C');
+	$("#underline").append("<img id='underline' src='static/line.jpg'/>");
 	debug_websocket = $('#debug_websocket').prop("checked");
 	debug_js        = $('#debug_js').prop("checked");
 	debug_all       = $('#debug_all').prop("checked");
 	
-	$( "#radio-websocket-online" ).prop( "checked", false ).checkboxradio( "refresh" );	
+	$("#radio-websocket-online" ).prop( "checked", false ).checkboxradio( "refresh");
 	$('#debug_console').attr('style', 'background-color:White; font-size:14px; height: 20em;');
 	$('#debug_console').textinput("option", "autogrow", false);
-	$("#live").css("background-color",'#C71C2C');
+
+		
+	//$('#server_msg').textinput("option", "autogrow", false);
 	
-	$('#button_power_up').hide();
-	$('#button_power_down').hide();
-
-	// Draw Highchart Data
-	chart        = draw_chart('chart');
-	plot         = draw_plot('power_plot');
-	//constl_plot_1 = draw_constl_plot('constl_plot_1');
-	//constl_plot_2 = draw_constl_plot('constl_plot_2');
-
-	surface_plot_1 = new greg.ross.visualisation.SurfacePlot(document.getElementById('constl_plot_1'));
-	surface_plot_2 = new greg.ross.visualisation.SurfacePlot(document.getElementById('constl_plot_2'));
+	card_1_chart = draw_chart('card_1_chart');
+	card_2_chart = draw_chart('card_2_chart');
+	
+	//card_1_const = draw_const_plot('card_1_const');
+	//card_2_const = draw_const_plot('card_2_const');	
+	surface_plot_1 = new greg.ross.visualisation.SurfacePlot(document.getElementById('card_1_const'));
+	surface_plot_2 = new greg.ross.visualisation.SurfacePlot(document.getElementById('card_2_const'));
 	
 	surface_plot_matrix_1 = init_surface_plot_variables(surface_size);
 	surface_plot_matrix_2 = init_surface_plot_variables(surface_size);
@@ -522,17 +476,9 @@ $(document).ready(function() {
 	draw_surface_plot(surface_plot_1, surface_plot_matrix_1, cnst);
 	//cnst = reset_constl(cnst);
 	draw_surface_plot(surface_plot_2, surface_plot_matrix_2, cnst);
-	//reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
-	//reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
-	//reset_surface_plot(SurfacePlot[0], surface_plot_matrix[0]);
 	
 	connect_to_websocket_host();
-	
-	///////////////////////////////////////////////////////////////////////				
-	$.getJSON('/cmd/', "cmd=get_power", function(data) {
-		console_response_msg(data.res);
-	});
-	
+
 	///////////////////////////////////////////////////////////////////////
 	//
 	// BUTTONS
@@ -545,64 +491,11 @@ $(document).ready(function() {
 	$("#button_clear_debug_console").click(function() {
 		$("#debug_console").text("");
 	});
-
-	$("#button_power_up").click(function() {		
-		if ($('#power_control_enabled').prop("checked")) {
-			dbg("button_power_up");
-			cmd = 'power_up';
-			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
-				console_response_msg(data.res);
-			});
-		}
-		else{
-			dbg("Power control disabled");
-		}
-		});
 	
-	$("#button_power_down").click(function() {		
-		if ($('#power_control_enabled').prop("checked")) {
-			dbg("button_power_down");
-			cmd = 'power_down';			
-			$.getJSON('/cmd/', "cmd=" + cmd, function(data) {
-				console_response_msg(data.res);
-			});
-		}
-		else{
-			dbg("Power control disabled");
-		}
-		});
-
-		$("#power_control_enabled").click(function(){
-		if ($('#power_control_enabled').prop("checked")) {
-			$('#button_power_up').show();
-			$('#button_power_down').show();
-		} else {
-			$('#button_power_up').hide();
-			$('#button_power_down').hide();
-		}
-	});
-
-	$("#const_rotate").click(function(){
-		data_surf.rotate(90,0,0);
-	});
-
+	///////////////////////////////////////////////////////////////////////
+	//
+	// BUTTONS
+	//
 	
-	$("#constellation_tab_button").click(function(){
-		dbg('constellation_tab_button clicked');
-		reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
-		reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
-	});
-
-	//TODO - determine which tab is active
-	 // $("a.tabs").click(function(event){
-  //       var item = $("a.tabs").text();
-  //       if (active_tab !== item) {
-  //               console.log(item + ": now active");
-  //               active_tab = item;
-  //       } else {
-  //           console.log(item + ": do nothing");            
-  //       }
-  //       active_tab = item;
-  //   });
 
 });
