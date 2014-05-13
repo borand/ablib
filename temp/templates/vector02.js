@@ -436,7 +436,15 @@ function open_websocket(hostname, hostport, hosturl) {
 					}
 					case 'const':{						
 						//update_const_plot(JsonData.val.id, JsonData.val.data);						
-						draw_surface_plot(JsonData.val.data);
+						//draw_surface_plot(JsonData.val.data);
+						plotid = JsonData.val.id;
+						cnst   = JsonData.val.data;
+						//console.log(plotid);
+						if(plotid == 1){
+							draw_surface_plot(surface_plot_1, surface_plot_matrix_1, cnst);	
+						} else {
+							draw_surface_plot(surface_plot_2, surface_plot_matrix_2, cnst);	
+						}
 						break;
 					}
 					case 'launch_power':{
@@ -518,9 +526,9 @@ $(document).ready(function() {
 	surface_plot_matrix_2 = init_surface_plot_variables(surface_size);
 	surface_plot_options  = init_surface_plot_options();
 	
-	//cnst = reset_constl(cnst);
+	cnst = reset_constl(cnst);
 	draw_surface_plot(surface_plot_1, surface_plot_matrix_1, cnst);
-	//cnst = reset_constl(cnst);
+	cnst = reset_constl(cnst);
 	draw_surface_plot(surface_plot_2, surface_plot_matrix_2, cnst);
 	//reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
 	//reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
