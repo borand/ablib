@@ -27,6 +27,10 @@ var surface_plot_matrix;
 var surface_plot_matrix_1;
 var surface_plot_matrix_2;
 
+var accum_matrix_1 = new Array(64);
+var accum_matrix_2 = new Array(64);
+
+
 var tooltipStrings = new Array();
 
 var constl;
@@ -94,6 +98,7 @@ function init_surface_plot_options(){
 	var colour1 = {
 		red : 0,
 		green : 0,
+		//blue : 0
 		blue : 255
 	};
 	var colour2 = {
@@ -166,21 +171,53 @@ function reset_surface_plot(SurfacePlot, surface_plot_matrix) {
 	}
 	SurfacePlot.draw(surface_plot_matrix, surface_plot_options);
 }
-function draw_surface_plot(SurfacePlot, surface_plot_matrix,cnst) {		
+function draw_surface_plot(SurfacePlot, surface_matrix,accum_matrix,cnst) {	
+	var idx = 0;	
+	var value_norm = 0;
+	var value_new = 0;
+	var value_max = 1;
+	var NORM = 0.3;
 	
-	//var idx = 0;	
+	// increment the values in surface_plot_matrix(which stores the values) and find the maximum values
 	for (var i = 0; i < surface_size; i++) {
-		for (var j = 0; j < surface_size; j++) {
-			var value = cnst[i][j];
-			var current_value = surface_plot_matrix.getValue(i, j);
-			surface_plot_matrix.setValue(i, j, current_value + value / 20);
-			//tooltipStrings[idx] = "I:" + i + ", Q:" + j + " = " + value;
-			//idx++;
+		for (var q = 0; q < surface_size; q++) {
+			if (accum_matrix[i] == null){
+				// initialize the array if required
+				accum_matrix[i] = new Array(surface_size);
+			}
+			
+			if (accum_matrix[i][q] == null)
+				accum_matrix[i][q] = cnst[i][q];
+			else if (cnst[i][q] != 0) {
+				accum_matrix[i][q] += cnst[i][q];
+				
+				if (accum_matrix[i][q] > value_max){
+					// track the maximum value
+					value_max = accum_matrix[i][q];
+				}
+			}
 		}
 	}
-	SurfacePlot.draw(surface_plot_matrix, surface_plot_options);
+	
+	// iterate through all of the values, normalizing to the peak value
+	
+	// initialize storage for each row of x values	
+	for (var i = 0; i < surface_size; i++) {
+		for (var q = 0; q < surface_size; q++) {
+			if (cnst[i][q] != 0) {
+				value_new = accum_matrix[i][q] / value_max;
+				value_norm = value_new * NORM;
+				surface_matrix.setValue(i,q,value_norm);
+				
+				tooltipStrings[idx] = "I:" + i + ", Q:" + q + " = " + value_new;
+				idx++;
+			}
+		}
+	}
+//	error('test')
+	
+	SurfacePlot.draw(surface_matrix, surface_plot_options);
 }
-
 ///////////////////////////////////////////////////////////////////////
 // HIGHCHARTS
 //
@@ -452,9 +489,9 @@ function open_websocket(hostname, hostport, hosturl) {
 						cnst   = JsonData.val.data;
 						//console.log(plotid);
 						if(plotid == 1){
-							draw_surface_plot(surface_plot_1, surface_plot_matrix_1, cnst);	
+							draw_surface_plot(surface_plot_1, surface_plot_matrix_1,accum_matrix_1, cnst);	
 						} else {
-							draw_surface_plot(surface_plot_2, surface_plot_matrix_2, cnst);	
+							draw_surface_plot(surface_plot_2, surface_plot_matrix_2,accum_matrix_2, cnst);	
 						}
 						break;
 					}
@@ -538,9 +575,9 @@ $(document).ready(function() {
 	surface_plot_options  = init_surface_plot_options();
 	
 	cnst = reset_constl(cnst);
-	draw_surface_plot(surface_plot_1, surface_plot_matrix_1, cnst);
+	draw_surface_plot(surface_plot_1, surface_plot_matrix_1,accum_matrix_1, cnst);
 	cnst = reset_constl(cnst);
-	draw_surface_plot(surface_plot_2, surface_plot_matrix_2, cnst);
+	draw_surface_plot(surface_plot_2, surface_plot_matrix_2,accum_matrix_2, cnst);
 	//reset_surface_plot(surface_plot_1, surface_plot_matrix_1);
 	//reset_surface_plot(surface_plot_2, surface_plot_matrix_2);
 	//reset_surface_plot(SurfacePlot[0], surface_plot_matrix[0]);
