@@ -16,7 +16,7 @@ log.info("2013.12.22 20:23")
 ##########################################################################################
 class IrqSubmit(threading.Thread):
 
-    def __init__(self, channel='irq', host='192.168.1.133'):
+    def __init__(self, channel='irq', host='192.168.1.10'):
         threading.Thread.__init__(self)        
         self.redis     = Redis(host=host)
         self.msg_count = 0
@@ -61,7 +61,7 @@ class IrqSubmit(threading.Thread):
         self.Log.debug('end of run()')
 
     def process_message(self, item):
-        self.Log.debug('process_message(type=%s)' % item['type'])
+        #self.Log.debug('process_message(type=%s)' % item['type'])
         #to = time.time()
         #self.busy = True
 
@@ -71,12 +71,24 @@ class IrqSubmit(threading.Thread):
             try:             
                 msg = sjson.loads(item['data'])
                 self.last = msg
-                timestamp = datetime.datetime.strptime(msg[0].split('.')[0],"%Y-%m-%d-%H:%M:%S")
-                power_W = round(3600.0/((pow(2,16)*msg[1][1] + msg[1][2])/16e6*1024))
-                self.last_enqueue = self.Q.enqueue(submit, [[0,'hydro',power_W]], timestamp=timestamp)
-
                 self.Log.debug('    msg=%s' % str(msg))
+                timestamp = datetime.datetime.strptime(msg[0].split('.')[0],"%Y-%m-%d-%H:%M:%S")
+
+                cmd  = msg[2]['cmd']
+                data = msg[2]['data']
+                submit_data = None
+                self.Log.debug('process_message(type=%s, cmd=%s)' % (item['type'], cmd))
+                if cmd == 'irq_0':                    
+                    val         = round(3600.0/((pow(2,16)*data[2] + data[3])/16e6*1024))
+                    submit_data = [[0,'power_W',val]]
+                if cmd == 'irq_cWH'
+                    val         = data[0]
+                    submit_data = [[0,'power_cWh',val]]
+
+                if submit_data is not None:
+                    self.last_enqueue = self.Q.enqueue(submit, submit_data, timestamp=timestamp)
+                
             except Exception as E:
                 self.Log.error(E.message)
-
+                msg = sjson.loads(item['data'])
 ##########################################################################################

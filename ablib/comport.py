@@ -92,7 +92,7 @@ class ComPort(Thread):
     redis_send_key = 'ComPort-send'
     redis_read_key = 'ComPort-read'
     redis_pub_channel = 'rtweb'
-    redis_sub_channel = 'ComPort-sub'
+    redis_sub_channel = 'cmd'
     
     
     def __init__(self,
@@ -290,6 +290,9 @@ class ComPort(Thread):
 
 if __name__ == '__main__':
     #log.level = logbook.ERROR
+    test_json = 0;
+    run       = 1;
+
     cmd_vector = ['idn', 'adc', 'dio', 'getwh', 'resetwh', 'peek 22', 'owrom', 'owsave 1','owload', \
                   'owsp','owdata','owwp 3 1', 'owrp 3', 'adsf']
     C = ComPort('/dev/ttyUSB0')
@@ -297,13 +300,19 @@ if __name__ == '__main__':
     C.send('C')
     C.start_thread()
     
-    for cmd in cmd_vector:
-        try:
-            out = C.query(cmd)
-            print out
-        except Exception as E:
-            print E
+    if test_json:
+        for cmd in cmd_vector:
+            try:
+                out = C.query(cmd)
+                print out
+            except Exception as E:
+                print E    
+    if run:
+        R = RedisSub(C)
+        while True:
+            pass
 
+    R.stop()
     C.close()
 
     print "All done"
