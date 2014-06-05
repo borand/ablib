@@ -81,12 +81,18 @@ class IrqSubmit(threading.Thread):
                 if cmd == 'irq_0':                    
                     val         = round(3600.0/((pow(2,16)*data[2] + data[3])/16e6*1024))
                     submit_data = [[0,'power_W',val]]
-                if cmd == 'irq_cWH'
+                if cmd == 'irq_cWH':
                     val         = data[0]
                     submit_data = [[0,'power_cWh',val]]
+                if cmd == 'irq_port_d':
+                    val = data[0]
+                    submit_data = []
+                    for bit in range(4):
+                        bit_val = val >> bit & 1
+                        submit_data.append([0,'irq_port_d_%d' % bit, bit_val])
 
                 if submit_data is not None:
-                    self.last_enqueue = self.Q.enqueue(submit, submit_data, timestamp=timestamp)
+                    self.last_enqueue = self.Q.enqueue(submit, submit_data, timestamp=timestamp, submit_to='192.168.1.10',threshold=1)
                 
             except Exception as E:
                 self.Log.error(E.message)
