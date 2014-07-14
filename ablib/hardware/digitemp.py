@@ -63,10 +63,11 @@ class Digitemp():
         if self.IsConnected() and self.IsInstalled():
             dev_path = '/dev/bus/usb/%s/%s' % (self.usb_bus_num, self.usb_dev_num)
             ret = sh.ls(dev_path,'-l')
+            print "THIS FUNCTION IS NOT IMPLEMENTED - REQUIRES SUDO ACCESS"
             # with sh.sudo:
             #     ret = sh.chmod('777',dev_path)
             #     ret = sh.modprobe('-r', 'ds2490')            
-            self._configured = True    
+            # self._configured = True    
         else:
             self._configured = False
         
