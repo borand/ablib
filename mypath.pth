@@ -1,3 +1,4 @@
-
-/home/andrzej/projects/Daq328p/daq328p/hardware
-/home/andrzej/projects/ablib/ablib
+/home/andrzej/projects/ablib/
+/home/andrzej/projects/ablib/ablib/analysis
+/home/andrzej/projects/ablib/ablib/hardware
+/home/andrzej/projects/ablib/ablib/daq
