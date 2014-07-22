@@ -8,7 +8,7 @@ import binascii
 import os
 import datetime
 from logbook import Logger
-from datastore import submit
+from ablib.daq.datastore import submit
 
 
 CMDS = {0x50: ['Standard Message Received', 0, 11,],

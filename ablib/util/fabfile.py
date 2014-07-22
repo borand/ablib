@@ -1,9 +1,11 @@
 from fabric.api import run, env, local
 import psutil
+import sh
 
 __author__ = 'andrzej'
 env.hosts = ['localhost']
-ROOT_DIR = '/home/andrzej'
+
+ROOT_DIR = '~'
 
 PROCESS_OF_INTEREST = ['comport.py', 'rtweb.py', 'daq_irq.py', 'manage.py', '/venv/bin/rqworker']
 
@@ -54,7 +56,7 @@ def start():
     local(full_cmd)
 
     venv = ''
-    cmd = ROOT_DIR + '/projects/realtime/venv/bin/rqworker'
+    cmd = ROOT_DIR + '~/venv/bin/rqworker'
     full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
     #print full_cmd
     local(full_cmd)

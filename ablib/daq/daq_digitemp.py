@@ -1,4 +1,4 @@
-import digitemp as dt
+import ablib.hardware.digitemp as dt
 from submit import submit
 
 
