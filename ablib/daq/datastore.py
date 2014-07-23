@@ -9,20 +9,23 @@ from redis import Redis
 log = Logger('datastore')
 
 def get_last_value(serial_number):
-    R = Redis()
-    datavalue_json = R.get('serial_number:'+serial_number)
-    if datavalue_json is not None:
-        try:
-            datavalue_obj = sjson.loads(datavalue_json)
-            timestamp = datavalue_obj[0]
-            datavalue = datavalue_obj[1]
-        except Exception as e:
-            log.error("Exception occured, within get_last_value function: %s" % E.message)
+    try:
+        R = Redis()
+        datavalue_json = R.get('serial_number:'+serial_number)
+        if datavalue_json is not None:
+            try:
+                datavalue_obj = sjson.loads(datavalue_json)
+                timestamp = datavalue_obj[0]
+                datavalue = datavalue_obj[1]
+            except Exception as e:
+                log.error("Exception occured, within get_last_value function: %s" % E.message)
+                return None
+
+            timestamp = datetime.datetime.strptime(timestamp.split('.')[0],"%Y-%m-%d-%H:%M:%S")
+            return {'serial_number' : serial_number, 'timestamp': timestamp, 'datavalue' : datavalue}
+        else:
             return None
-        
-        timestamp = datetime.datetime.strptime(timestamp.split('.')[0],"%Y-%m-%d-%H:%M:%S")
-        return {'serial_number' : serial_number, 'timestamp': timestamp, 'datavalue' : datavalue}
-    else:
+    except:
         return None
 
 def save_last_value(serial_number, timestamp, datavalue):
@@ -70,6 +73,8 @@ def submit(data_set, timestamp='', submit_to='0.0.0.0', port=8000, threshold=0, 
                 log.info(res.content)
                 ret.append(res.content)
                 save_last_value(serial_number, timestamp, datavalue)
+                R = Redis()
+                R.publish('datastore:submit:submitted',res.content)
             else:
                 log.info(res)
 

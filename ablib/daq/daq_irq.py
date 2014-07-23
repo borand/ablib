@@ -18,13 +18,14 @@ Options:
 import threading
 import datetime
 import time
+import simplejson as sjson
 
 from redis import Redis
 from rq import Queue
 from logbook import Logger
-from datastore import submit
 from docopt import docopt
-import simplejson as sjson
+
+from ablib.daq.datastore import submit
 from ablib.util.common import get_host_ip
 
 
@@ -90,12 +91,12 @@ class IrqSubmit(threading.Thread):
                 self.redis.publish('error', __name__ + ": ERROR_TEST")
             else:
                 if item['type'] == 'message':
-                    self.print_message(item)
+                    self.process_message(item)
                 #self.process_message(item)
 
         self.Log.debug('end of run()')
 
-    def print_message(self, item):
+    def process_message(self, item):
         try:
 
             msg         = sjson.loads(item['data'])
@@ -103,9 +104,9 @@ class IrqSubmit(threading.Thread):
             timestamp   = msg['MSG']['timestamp']
 
             for data in device_data:
-                sn     = data[0]
+                sn                  = data[0]
                 processing_function = ProcessingFunctions.get(sn,process_default)
-                val    = processing_function(data)
+                val                 = processing_function(data)
                 print("Final dataset : sn = {0}, val = {1}".format(sn, val))
 
                 threshold   = 0
@@ -119,7 +120,7 @@ class IrqSubmit(threading.Thread):
             self.Log.error("print_message(): " + E.message)
             self.Log.error(item)
 
-    def process_message(self, item):
+    def print_message(self, item):
         try:
             if item['type'] == 'message':
                 msg = sjson.loads(item['data'])

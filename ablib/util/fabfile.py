@@ -37,7 +37,14 @@ def host_type():
     run('uname -s')
 
 def start():
+
     venv = ROOT_DIR + '/venv/bin/python'
+    cmd = ROOT_DIR + '/projects/ablib/ablib/hardware/comport.py run --redishost 127.0.0.1'
+    full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
+    #print full_cmd
+    local(full_cmd)
+
+
     cmd  = '~/projects/realtime/rtweb/rtweb.py'
 
     full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
@@ -45,10 +52,7 @@ def start():
     #print full_cmd
     local(full_cmd)
 
-    cmd = ROOT_DIR + '/projects/ablib/ablib/hardware/comport.py run --redishost 127.0.0.1'
-    full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
-    #print full_cmd
-    local(full_cmd)
+
 
     cmd = ROOT_DIR + '/projects/ablib/ablib/daq/daq_irq.py'
     full_cmd = 'nohup {0} {1} run --redishost localhsot > /dev/null &'.format(venv,cmd)
@@ -56,7 +60,7 @@ def start():
     local(full_cmd)
 
     venv = ''
-    cmd = ROOT_DIR + '~/venv/bin/rqworker'
+    cmd = ROOT_DIR + '/venv/bin/rqworker'
     full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
     #print full_cmd
     local(full_cmd)

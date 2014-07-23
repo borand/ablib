@@ -3,41 +3,44 @@
 Simple module for communicating with ComPort firmware written for AVR328p.
 
 Usage:
-  hardware.py test [--dev=DEV]
-  hardware.py [--dev=DEV | --test]
+  hardware.py test [--dev=DEV ] [--test] [--submit_to=SUBMIT_TO] [--redishost=REDISHOST]
+  hardware.py run [--dev=DEV] [--local] [--submit_to=SUBMIT_TO] [--redishost=REDISHOST]
   hardware.py (-h | --help)
 
 Options:
   -h, --help
-  --dev=DEV              [default: /dev/ttyUSB0]  
-  --submit_to=SUBMIT_TO  [default: 192.168.1.133]
+  --dev=DEV              [default: /dev/ttyUSB0]
+  --run=RUN              [default: True]
+  --submit_to=SUBMIT_TO  [default: 192.168.1.10]
+  --redishost=REDISHOST  [default: 192.168.1.10]
 
 """
 
 import serial
-import struct
 import time
 import re
 import simplejson as sjson
 import logbook
+import redis
 
 from threading import Thread,Event
-from Queue import Queue, Empty
-from warnings import *
+from Queue import Queue
 from datetime import datetime
 from logbook import Logger
 from docopt import docopt
 
-import redis
+# MY MODULES
+from ablib.util.message import Message
+from ablib.util.common import get_host_ip
 
+##########################################################################################
+# Global definitions
 PARITY_NONE, PARITY_EVEN, PARITY_ODD = 'N', 'E', 'O'
 STOPBITS_ONE, STOPBITS_TWO = (1, 2)
 FIVEBITS, SIXBITS, SEVENBITS, EIGHTBITS = (5,6,7,8)
 TIMEOUT = 2
 
-log = Logger('ComPort')
-log.info("2013.12.15 20:23")
-log.level = logbook.ERROR
+EXCHANGE = 'ComPort'
 
 ##########################################################################################
 #
@@ -46,8 +49,9 @@ class RedisSub(Thread):
     def __init__(self, interface, channel='cmd', host='127.0.0.1'):
         Thread.__init__(self)
         self.interface = interface
+        self.signature = "{0:s}:{1:s}".format(get_host_ip(), self.interface.serial.port)
         self.redis     = redis.Redis(host=host)
-        self.channel   = channel      
+        self.channel   = self.signature+"-cmd"
         self.pubsub    = self.redis.pubsub()
         self.Log       = Logger('RedisSub')
         self.Log.debug('__init__(channel=%s)' % self.channel)
@@ -68,36 +72,35 @@ class RedisSub(Thread):
 
     def run(self):
         self.Log.debug('run()')
-        for item in self    .pubsub.listen():
-            if item['data'] == "unsubscribe":
-                self.pubsub.unsubscribe()
-                self.Log.info("unsubscribed and finished")
-                break
-            else:
-                cmd = item['data']
-                if isinstance(cmd,str):
-                    self.Log.debug(cmd)
-                    self.interface.send(item['data'])
+        try:
+            for item in self.pubsub.listen():
+                if item['data'] == "unsubscribe":
+                    self.pubsub.unsubscribe()
+                    self.Log.info("unsubscribed and finished")
+                    break
                 else:
-                    self.Log.debug(cmd)
-
+                    cmd = item['data']
+                    if isinstance(cmd,str):
+                        self.Log.debug(cmd)
+                        self.interface.send(item['data'])
+                    else:
+                        self.Log.debug(cmd)
+        except Exception as E:
+            error_msg = {'source' : 'RedisSub', 'function' : 'def run(self):', 'error' : E.message}
+            self.redis.publish('error',sjson.dumps(error_msg))
                 
         self.Log.debug('end of run()')
 
 ##########################################################################################
-class ComPort(Thread):    
-    read_q         = Queue()    
-    redis          = redis.Redis()
-    re_data        = re.compile(r'(?:<)(?P<cmd>\d+)(?:>)(.*)(?:<\/)(?P=cmd)', re.DOTALL)
-    redis_send_key = 'ComPort-send'
-    redis_read_key = 'ComPort-read'
+class ComPort(Thread):
+    re_data        = re.compile(r'(?:<)(?P<cmd>\d+)(?:>)(.*)(?:<\/)(?P=cmd)(?:>)', re.DOTALL)
+    re_next_cmd    = re.compile("(?:<)(\d+)(?:>\{\"cmd\":\")")
+
     redis_pub_channel = 'rtweb'
-    redis_sub_channel = 'cmd'
-    
     
     def __init__(self,
-                 port = 8,
-                 packet_timeout=2,
+                 port = '/dev/ttyUSB0',
+                 packet_timeout=1,
                  baudrate=115200,       
                  bytesize=EIGHTBITS,    
                  parity=PARITY_NONE,    
@@ -105,31 +108,49 @@ class ComPort(Thread):
                  xonxoff=0,             
                  rtscts=0,              
                  writeTimeout=None,     
-                 dsrdtr=None            
-                 ):
-
-        '''
-        Initialise the asynchronous serial object
-        '''
+                 dsrdtr=None,
+                 host='127.0.0.1',
+                 run=True):
         
         Thread.__init__(self)
+
         self.serial = serial.Serial(port, baudrate, bytesize, parity, stopbits, packet_timeout, xonxoff, rtscts, writeTimeout, dsrdtr)
-        
+        self.signature = "{0:s}:{1:s}".format(get_host_ip(), self.serial.port)
+        self.redis_send_key = self.signature+'-send'
+        self.redis_read_key = self.signature+'-read'
+        self.log = Logger(self.signature)
+        self.redis = redis.Redis(host=host)
+
+        # TODO add checking for redis presence and connection
+        if self.redis.ping():
+            # Register the new instance with the redis exchange
+            if not self.redis.sismember(EXCHANGE,self.signature):
+                self.redis.sadd(EXCHANGE,self.signature)
+        else:
+            pass
+
         self.running = Event()
         self.buffer  = ''
-        self.log = Logger('ComPort')
-        log.info('ComPort(is_alive=%d, serial_port_open=%d)' % (self.is_alive(), not self.serial.closed))
+        if run:
+            self.start_thread()
+
+        self.log.debug('ComPort(is_alive=%d, serial_port_open=%d, redis_host=%s)' % (self.is_alive(), not self.serial.closed, host))
 
     def __del__(self):
-        log.debug("About to delete the object")
+        self.log.debug("About to delete the object")
         self.close()
-        log.debug("Closing serial interface")
+        time.sleep(1)
+        self.log.debug("Closing serial interface")
         self.serial.close()
+
         if self.serial.closed:
-            log.error("The serial connection still appears to be open")
+            self.log.error("The serial connection still appears to be open")
         else:
-            log.debug("The serial connection is closed")
-        log.debug("Object deleted")
+            self.log.debug("The serial connection is closed")
+        self.log.debug("Object deleted")
+
+        if self.redis.sismember('ComPort',self.signature):
+            self.redis.srem('ComPort',self.signature)
         
     def start_thread(self):
         '''
@@ -137,7 +158,7 @@ class ComPort(Thread):
         thread.
         '''
 
-        log.debug('start_thread()')
+        self.log.debug('start_thread()')
         self.serial.flushInput()
         self.running.set()
         self.start()
@@ -152,7 +173,7 @@ class ComPort(Thread):
         '''
         if len(data) == 0:               
             return
-        log.debug("send(cmd=%s)" % data)
+        self.log.debug("send(cmd=%s)" % data)
         # Automatically append \n by default, but allow the user to send raw characters as well
         if CR:
             if (data[-1] == "\n"):
@@ -173,68 +194,55 @@ class ComPort(Thread):
     
     def read(self, waitfor=''):
         '''
-        read data in the serial port buffer
-        - check if the serial port is open 
-        - attempt to read all data availiable in the buffer
-        - pack the serial data and the serial errors
+        reads the data by waiting until new comport is found in the buffer and result can be read from the redis server
         '''
-       
-        serial_data = ''
-        if self.is_alive():
-            try:
-                return self.read_q.get(1,1)
-            except:
-                return ''
 
-        if self.open():
-            try:
-                to = time.clock()                
-                done = 0
-                while time.clock() - to < TIMEOUT and not done:
-                    if self.is_alive():
-                        if not self.read_q.empty():
-                            tmp = self.read_q.get_nowait()
-                            serial_data += tmp[1]
-                    else:                        
-                        n = self.serial.inWaiting()
-                        if n > 0:
-                            serial_data += self.serial.read(n)
-                    if waitfor in serial_data:
-                        done = 1
-                serial_error = 0
-            except:
-                serial_error = 1
-        else:
-            serial_error = 2
-        
-        self.redis.set(self.redis_read_key,serial_data)
-        return (serial_error, serial_data)
-    
+        serial_data = ''
+        done = False
+        to = time.clock()
+        while time.clock() - to < TIMEOUT and not done:
+            serial_data = self.redis.get(self.redis_read_key)
+            done = waitfor in self.buffer and isinstance(serial_data,str)
+
+        if not done:
+            self.log.debug("read() did not find waitfor {:s} in self.buffer".format(waitfor))
+
+        self.redis.delete(self.redis_read_key)
+        return [done, serial_data]
+
     def query(self,cmd, **kwargs):
         """
-        sends cmd to the controller and watis until waitfor is found in the buffer.
+        sends cmd to the controller and waits until waitfor is found in the buffer.
         """
         
-        waitfor = kwargs.get('waitfor','\r\n')
+        waitfor = kwargs.get('waitfor','')
         tag     = kwargs.get('tag','')
-        json    = kwargs.get('json',0)
-        delay   = kwargs.get('delay',0)
+        json    = kwargs.get('json',1)
+        delay   = kwargs.get('delay',0.01)
+
+        if len(waitfor) < 1:
+            next_cmd_num = self.re_next_cmd.findall(self.buffer)
+            if len(next_cmd_num) > 0:
+                waitfor = '<{:d}>{:s}"cmd":"'.format(int(next_cmd_num[0])+1,"{")
 
         self.log.debug('query(cmd=%s, waitfor=%s, tag=%s,json=%d, delay=%d):' % \
             (cmd, waitfor, tag, json, delay))
 
-        query_data = ''
         self.send(cmd)
         time.sleep(delay)        
-        out = self.read(waitfor)
-        query_data = out      
+        query_data = self.read(waitfor=waitfor)
+        if query_data[0]:
+            try:
+                query_data[1] = sjson.loads(query_data[1])
+            except:
+                query_data[0] = False
         return query_data
 
     def close(self):
         '''
         Close the listening thread.
         '''
-        log.debug('close() - closing the worker thread')
+        self.log.debug('close() - closing the worker thread')
         self.running.clear()
 
     def run(self):
@@ -244,75 +252,95 @@ class ComPort(Thread):
         '''
         
         try:            
-            log.debug('Starting the listner thread')            
+            self.log.debug('Starting the listner thread')
+            Msg = Message(self.signature)
+
             while(self.running.isSet()):
                 bytes_in_waiting = self.serial.inWaiting()                
                 
                 if bytes_in_waiting:
                     new_data = self.serial.read(bytes_in_waiting)
                     self.buffer = self.buffer + new_data
-                    #log.debug('found %d bytes inWaiting' % bytes_in_waiting)
+                    #self.log.debug('found %d bytes inWaiting' % bytes_in_waiting)
 
                 crlf_index = self.buffer.find('\r\n')
-                if crlf_index > 0:
-                    # log.debug('read line: ' + line)
-                    timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+
+                if crlf_index > -1:
+                    # self.log.debug('read line: ' + line)
                     line = self.buffer[0:crlf_index]
                     temp = self.re_data.findall(line)
                                        
                     if len(temp):
+                        final_data = dict()
+                        timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+                        final_data['timestamp'] = timestamp
+                        final_data['raw']       = line
                         try:
-                            final_data = [timestamp, sjson.loads(temp[0][0]), sjson.loads(temp[0][1])]
-                            self.redis.publish('irq',sjson.dumps(final_data))
+                            final_data.update({'cmd_number' : sjson.loads(temp[0][0])})
+                            final_data.update(sjson.loads(temp[0][1]))
+
                         except Exception as E:
-                            log.error(E.message + "  line %s" % line)                            
-                            final_data = [timestamp, -1, line] 
-                        
-                        # final_data = [timestamp, line]
-                        self.redis.publish(self.redis_pub_channel,sjson.dumps({'id':'debug_console','data':final_data}))
-                        self.read_q.put(final_data)
-                    self.buffer = self.buffer[crlf_index+2:]                        
+                            final_data.update({'cmd_number' : -1})
+                            error_msg = {'timestamp' : timestamp, 'from': self.signature, 'source' : 'ComPort', 'function' : 'def run() - inner', 'error' : E.message}
+                            Msg.msg = error_msg
+                            self.redis.publish('error',error_msg)
+
+                        Msg.msg = final_data
+                        self.redis.publish(self.redis_pub_channel, Msg.as_jsno())
+                        self.redis.set(self.redis_read_key,Msg.as_jsno())
+
+                    self.buffer = self.buffer[crlf_index+2:]
 
         except Exception as E:
-            log.error("Exception occured, within the run function: %s" % E.message)
+            error_msg = {'source' : 'ComPort', 'function' : 'def run() - outter', 'error' : E.message}
+            self.redis.publish('error',sjson.dumps(error_msg))
+            self.log.error("Exception occured, within the run function: %s" % E.message)
         
-        log.debug('Exiting run() function')
+        self.log.debug('Exiting run() function')
 
 ############################################################################################
-    def process_q(self):
-        """
-        """
-        if not self.read_q.empty():
-            q_data = self.read_q.get(1,1)
-            log.debug('q_data = %s' % str(q_data[1]))            
-        else    :
-            log.debug('read_q is empty')
 
 if __name__ == '__main__':
-    #log.level = logbook.ERROR
-    test_json = 0;
-    run       = 1;
+    arguments = docopt(__doc__, version='Naval Fate 2.0')
+    print("===============================================")
+    print(arguments)
 
-    cmd_vector = ['idn', 'adc', 'dio', 'getwh', 'resetwh', 'peek 22', 'owrom', 'owsave 1','owload', \
-                  'owsp','owdata','owwp 3 1', 'owrp 3', 'adsf']
-    C = ComPort('/dev/ttyUSB0')
-    C.log.level = logbook.ERROR
-    C.send('C')
-    C.start_thread()
+    dev = arguments['--dev']
+
+    print("===============================================")
+    print(dev)
+
+
+    test_json  = arguments['--test']
+    run_main   = arguments['run']
+    redis_host = arguments.get('--redishost',get_host_ip())
+    run_local  = arguments.get('--local',False)
+
+    if run_local:
+        redis_host = 'localhost'
+    
+    C = ComPort(dev, host=redis_host)
+    C.log.level = logbook.DEBUG
     
     if test_json:
+        cmd_vector = ['idn', 'adc', 'dio', 'getwh', 'resetwh', 'peek 22', 'owrom', 'owsave 1','owload', \
+                  'owsp','owdata','owwp 3 1', 'owrp 3', 'adsf']
         for cmd in cmd_vector:
             try:
                 out = C.query(cmd)
                 print out
             except Exception as E:
                 print E    
-    if run:
-        R = RedisSub(C)
-        while True:
+    
+    if run_main:
+        R = RedisSub(C, host=redis_host)
+        try:
+            while True:
+                pass
+        except KeyboardInterrupt:
             pass
+        R.stop()
 
-    R.stop()
     C.close()
 
     print "All done"
