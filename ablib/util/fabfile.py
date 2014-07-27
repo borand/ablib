@@ -36,6 +36,11 @@ if __name__ == '__main__':
 def host_type():
     run('uname -s')
 
+def restart():
+    kill()
+    start()
+    ps()
+
 def start():
 
     venv = ROOT_DIR + '/venv/bin/python'
@@ -44,15 +49,12 @@ def start():
     #print full_cmd
     local(full_cmd)
 
-
     cmd  = '~/projects/realtime/rtweb/rtweb.py'
 
     full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
     full_cmd = '{0} {1} > /dev/null &'.format(venv,cmd)
     #print full_cmd
     local(full_cmd)
-
-
 
     cmd = ROOT_DIR + '/projects/ablib/ablib/daq/daq_irq.py'
     full_cmd = 'nohup {0} {1} run --redishost localhsot > /dev/null &'.format(venv,cmd)
