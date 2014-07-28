@@ -14,7 +14,7 @@ class Digitemp():
         self._connected         = 0
         self._configured        = 0
                         
-        self.config_file_path   = os.path.dirname(os.path.realpath(__file__)) + '/../config/'
+        self.config_file_path   = os.path.dirname(os.path.realpath(__file__))
         self.config_filename    = 'digitemp.conf'
         self.digitemp_cmd_str   = 'digitemp_DS2490'
         self.digitemp           = sh.Command(self.digitemp_cmd_str)        
