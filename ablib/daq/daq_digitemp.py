@@ -57,20 +57,12 @@ def StarDigitempSubmit(channel, host='0.0.0.0', submit_to='192.168.1.10'):
         not_done = True
         while not_done:
             timestamp = datetime.datetime.now()
-            #data_set     = D.GetData()
-            data_set = [[0, '1030B8D2010800BC', 20.1875],
-                         [1, '1002BDD2010800ED', 22.375],
-                         [2, '10F237C0010800D6', 23.5625],
-                         [3, '10EAB6D201080015', 22.9375],
-                         [4, '109A3FD30108003A', 23.9375],
-                         [5, '10F3F1D201080060', 22.875],
-                         [6, '101BBFD2010800A3', 22.75],
-                         [7, '109729C001080020', 24.875]]
+            data_set     = D.GetData()
             last_enqueue = Q.enqueue(submit, data_set,\
                                     timestamp=timestamp,\
                                     submit_to=submit_to,\
                                     threshold=threshold)
-            not_done = False
+            #not_done = False
 
     except KeyboardInterrupt:
         pass
