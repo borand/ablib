@@ -58,6 +58,7 @@ def StarDigitempSubmit(channel, host='0.0.0.0', submit_to='192.168.1.10'):
         while not_done:
             timestamp = datetime.datetime.now()
             data_set     = D.GetData()
+            print data_set
             last_enqueue = Q.enqueue(submit, data_set,\
                                     timestamp=timestamp,\
                                     submit_to=submit_to,\
