@@ -7,7 +7,7 @@ env.hosts = ['localhost']
 
 ROOT_DIR = '~'
 
-PROCESS_OF_INTEREST = ['comport.py', 'rtweb.py', 'daq_irq.py', 'manage.py', '/venv/bin/rqworker']
+PROCESS_OF_INTEREST = ['comport.py', 'rtweb.py', 'daq_irq.py', 'manage.py', '/venv/bin/rqworker', 'daq_digitemp.py']
 
 def get_python_process_list():
     plist = []
@@ -63,6 +63,7 @@ def comport():
     local(full_cmd)
 
 def daq():
+    venv = ROOT_DIR + '/venv/bin/python'
     cmd = ROOT_DIR + '/projects/ablib/ablib/daq/daq_irq.py'
     full_cmd = 'nohup {0} {1} run --redishost localhsot > /dev/null &'.format(venv,cmd)
     #print full_cmd
@@ -72,6 +73,12 @@ def daq():
     cmd = ROOT_DIR + '/venv/bin/rqworker'
     full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
     #print full_cmd
+    local(full_cmd)
+
+def digitemp():
+    venv = ROOT_DIR + '/venv/bin/python'
+    cmd = ROOT_DIR + '/projects/ablib/ablib/daq/daq_digitemp.py'
+    full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
     local(full_cmd)
 
 def start():
