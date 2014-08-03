@@ -41,21 +41,28 @@ def restart():
     start()
     ps()
 
-def start():
+def rtweb():
+    venv = ROOT_DIR + '/venv/bin/python'
+    cmd  = '~/projects/realtime/rtweb/rtweb.py'
+    full_cmd = '{0} {1} > /dev/null &'.format(venv,cmd)
+    local(full_cmd)
 
+def sensorweb():
+    venv = ROOT_DIR + '/venv/bin/python'
+    cmd  = ROOT_DIR + '/projects/sensoredweb/manage.py runserver 0.0.0.0:8000'
+    full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
+    #full_cmd = 'nohup {0} {1} > sensoredweb.log &'.format(venv,cmd)
+    #print full_cmd
+    local(full_cmd)
+
+def comport():
     venv = ROOT_DIR + '/venv/bin/python'
     cmd = ROOT_DIR + '/projects/ablib/ablib/hardware/comport.py run --redishost 127.0.0.1'
     full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
     #print full_cmd
     local(full_cmd)
 
-    cmd  = '~/projects/realtime/rtweb/rtweb.py'
-
-    full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
-    full_cmd = '{0} {1} > /dev/null &'.format(venv,cmd)
-    #print full_cmd
-    local(full_cmd)
-
+def daq():
     cmd = ROOT_DIR + '/projects/ablib/ablib/daq/daq_irq.py'
     full_cmd = 'nohup {0} {1} run --redishost localhsot > /dev/null &'.format(venv,cmd)
     #print full_cmd
@@ -67,12 +74,11 @@ def start():
     #print full_cmd
     local(full_cmd)
 
-    venv = ROOT_DIR + '/venv/bin/python'
-    cmd  = ROOT_DIR + '/projects/sensoredweb/manage.py runserver 0.0.0.0:8000'
-    full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
-    #full_cmd = 'nohup {0} {1} > sensoredweb.log &'.format(venv,cmd)
-    #print full_cmd
-    local(full_cmd)
+def start():
+    comport()
+    rtweb()
+    daq()
+    sensorweb()
 
 def ps():
     get_python_process_list()

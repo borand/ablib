@@ -150,7 +150,8 @@ class Digitemp():
                              %(number_of_readings,num_of_sensors))
             
             for reading in data_vector_str:
-                data.append(simplejson.loads(reading))
+                sn_and_temp =simplejson.loads(reading)
+                data.append(sn_and_temp[1:])
         
         return data
 

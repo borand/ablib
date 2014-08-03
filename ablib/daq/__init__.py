@@ -1,2 +1,3 @@
 import daq_irq
+import daq_digitemp
 import datastore
