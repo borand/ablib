@@ -75,8 +75,6 @@ if __name__ == "__main__":
     print("===============================================")
     print(arguments)
 
-    dev = arguments['--dev']
-
     if arguments['run']:
         channel   = 'digitemp'
         host      = get_host_ip()
