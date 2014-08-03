@@ -52,7 +52,8 @@ def StarDigitempSubmit(channel, host='0.0.0.0', submit_to='192.168.1.10'):
 
     print"StartIqrSubmit(%s, %s, %s)" % (channel, host, submit_to)
     D = dt.Digitemp()
-    Q = Queue(connection=Redis())
+    R = Redis()
+    Q = Queue(connection=R)
     threshold = 0.5;
     try:
         not_done = True
@@ -62,7 +63,7 @@ def StarDigitempSubmit(channel, host='0.0.0.0', submit_to='192.168.1.10'):
             print data_set
             M = Message()
             M.msg = {'data' : data_set}
-            M.publish(channel, M.as_jsno())
+            R.publish(channel, M.as_jsno())
 
             last_enqueue = Q.enqueue(submit, data_set,\
                                     timestamp=timestamp,\
