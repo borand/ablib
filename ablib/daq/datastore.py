@@ -18,7 +18,7 @@ def get_last_value(serial_number):
                 timestamp = datavalue_obj[0]
                 datavalue = datavalue_obj[1]
             except Exception as e:
-                log.error("Exception occured, within get_last_value function: %s" % E.message)
+                log.error("Exception occured, within get_last_value function: %s" % e.message)
                 return None
 
             timestamp = datetime.datetime.strptime(timestamp.split('.')[0],"%Y-%m-%d-%H:%M:%S")
