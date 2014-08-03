@@ -4,7 +4,7 @@ module used to acquire temperature readings with digitemp_DS2490 and submit the 
 
 Usage:
   daq_digitemp.py test
-  daq_digitemp.py run
+  daq_digitemp.py run [--submit_to] [--channel]
   daq_digitemp.py (-h | --help)
 
 Options:
@@ -17,9 +17,10 @@ from logbook import Logger
 from docopt import docopt
 from ablib.daq.datastore import submit
 from ablib.util.common import get_host_ip
+from ablib.util.message import Message
 import ablib.hardware.digitemp as dt
 import datetime
-from submit import submit
+
 
 # TO BE DELETED
 # done = False
@@ -59,6 +60,10 @@ def StarDigitempSubmit(channel, host='0.0.0.0', submit_to='192.168.1.10'):
             timestamp = datetime.datetime.now()
             data_set     = D.GetData()
             print data_set
+            M = Message()
+            M.msg = {'data' : data_set}
+            M.publish(channel, M.as_jsno())
+
             last_enqueue = Q.enqueue(submit, data_set,\
                                     timestamp=timestamp,\
                                     submit_to=submit_to,\
@@ -76,7 +81,7 @@ if __name__ == "__main__":
     print(arguments)
 
     if arguments['run']:
-        channel   = 'digitemp'
+        channel   = arguments.get('--channel', 'digitemp')
         host      = get_host_ip()
         submit_to = arguments.get('--submit_to', get_host_ip())
         StarDigitempSubmit(channel, host, submit_to)
