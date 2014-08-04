@@ -52,7 +52,9 @@ def sensorweb():
     cmd  = ROOT_DIR + '/projects/sensoredweb/manage.py runserver 0.0.0.0:8000'
     full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
     #full_cmd = 'nohup {0} {1} > sensoredweb.log &'.format(venv,cmd)
-    #print full_cmd
+    #print
+    full_cmd = '~/projects/sensoredweb/venv/bin/python ~/projects/sensoredweb/manage.py runserver 0.0.0.0:8000 > /dev/null &'
+
     local(full_cmd)
 
 def comport():
@@ -82,10 +84,12 @@ def digitemp():
     local(full_cmd)
 
 def start():
+    sensorweb()
     comport()
     rtweb()
     daq()
-    sensorweb()
+    digitemp()
+
 
 def ps():
     get_python_process_list()
