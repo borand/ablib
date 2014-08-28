@@ -79,7 +79,7 @@ def daq():
 
 def digitemp():
     venv = ROOT_DIR + '/venv/bin/python'
-    cmd = ROOT_DIR + '/projects/ablib/ablib/daq/daq_digitemp.py'
+    cmd = ROOT_DIR + '/projects/ablib/ablib/daq/daq_digitemp.py run'
     full_cmd = 'nohup {0} {1} > /dev/null &'.format(venv,cmd)
     local(full_cmd)
 
