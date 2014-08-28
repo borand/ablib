@@ -46,3 +46,13 @@ if __name__ == '__main__':
         val = getvalues()
         for key in val.keys:
             print "pin {0} = {1}".format(key,val[key])
+
+    if run_main:
+        configio()
+        try:
+            while True:
+                val = getvalues()
+                for key in val.keys:
+                    print "pin {0} = {1}".format(key,val[key])
+        except KeyboardInterrupt:
+            pass
