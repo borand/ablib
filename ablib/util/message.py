@@ -20,6 +20,10 @@ class Message(object):
         data = {"FROM" : self.from_host, "TO" : self.to, "MSG" : self.msg}
         return dumps(data)
 
+    def as_json(self):
+        data = {"FROM" : self.from_host, "TO" : self.to, "MSG" : self.msg}
+        return dumps(data)
+
     def decode(self, msg):
         data_dict = loads(msg)
         self.from_host = data_dict['FROM']
