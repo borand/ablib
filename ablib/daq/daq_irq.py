@@ -3,13 +3,12 @@
 module used to listen for new data on the redis channel and submit the data to sensoredweb
 
 Usage:
-  daq_irq.py test [--dev=DEV] [--submit_to=SUBMIT_TO] [--redishost=REDISHOST]
-  daq_irq.py run  [--dev=DEV] [--submit_to=SUBMIT_TO] [--redishost=REDISHOST]
+  daq_irq.py test [--submit_to=SUBMIT_TO] [--redishost=REDISHOST]
+  daq_irq.py run  [--submit_to=SUBMIT_TO] [--redishost=REDISHOST]
   daq_irq.py (-h | --help)
 
 Options:
-  -h, --help
-  --dev=DEV              [default: /dev/ttyUSB0]
+  -h, --help  
   --submit_to=SUBMIT_TO  [default: 192.168.1.10]
   --redishost=REDISHOST  [default: 192.168.1.10]
 
@@ -28,12 +27,16 @@ from docopt import docopt
 from ablib.daq.datastore import submit
 from ablib.util.common import get_host_ip
 
-
 ##########################################################################################
 # Define special processing functions for various sensor data
-def process_hydro_power_data(data):
-    print("process_hydro_power_data({})".format(data))
-    return round(3600.0/((pow(2,16)*float(data[1]) + float(data[2]))/16.0e6*1024.0))
+def process_hydro_power_data(data):    
+    power = round(3600.0/((pow(2,16)*float(data[1]) + float(data[2]))/16.0e6*1024.0))    
+    print("process_hydro_power_data({} = power = {})".format(data,power))
+    return power
+    if power > 120.0*100.0: # 120V @ 100A 
+        return power
+    else:
+        return -1
 
 def process_hydro_wh_data(data):
     print("process_hydro_wh_data({})".format(data))
@@ -90,13 +93,14 @@ class IrqSubmit(threading.Thread):
             if item['data'] == "ERROR_TEST":
                 self.redis.publish('error', __name__ + ": ERROR_TEST")
             else:
-                if item['type'] == 'message':
+                if item['type'] == 'message':                    
                     self.process_message(item)
                 #self.process_message(item)
 
         self.Log.debug('end of run()')
 
     def process_message(self, item):
+        self.Log.debug('process_message()')
         try:
 
             msg         = sjson.loads(item['data'])
@@ -177,10 +181,8 @@ if __name__ == "__main__":
     print("===============================================")
     print(arguments)
 
-    dev = arguments['--dev']
-
     if arguments['run']:
         channel   = 'rtweb'
-        host      = get_host_ip()
+        host      = arguments.get('--redishost', get_host_ip())
         submit_to = arguments.get('--submit_to', get_host_ip())
         StartIqrSubmit(channel, host, submit_to)

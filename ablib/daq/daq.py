@@ -108,10 +108,13 @@ if __name__ == "__main__":
     print("===============================================")
     print(arguments)
 
-    dev = arguments['--dev']
-
     if arguments['run']:
         channel   = 'rtweb'
         host      = get_host_ip()
         submit_to = arguments.get('--submit_to', get_host_ip())
         StartIqrSubmit(channel, host, submit_to)
+
+    if arguments['test']:
+        channel   = 'rtweb'
+        host      = get_host_ip()
+        submit_to = arguments.get('--submit_to', get_host_ip())
