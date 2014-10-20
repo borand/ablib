@@ -301,11 +301,11 @@ class ComPort(Thread):
 ############################################################################################
 
 def main(**kwargs):
-	 try:
+    try:
         while True:
             pass
     except KeyboardInterrupt:
-        pass	
+        pass    
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Naval Fate 2.0')

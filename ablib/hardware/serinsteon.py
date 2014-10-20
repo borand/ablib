@@ -46,9 +46,10 @@ ikea_lamp1  = [0x18, 0x98, 0xAA]
 ikea_lamp2  = [0x16, 0x83, 0x87]
 outdoor     = [0x14, 0xa1, 0x28]
 light       = [0x20, 0x1f, 0x11]
-outdoor_sw  = [0x14, 0xA1, 0x28]
-bedroom     = [0x1d, 0x4d, 0x86]
+bedroom     = [0x1D, 0xAD, 0x86]
+unused_se   = [0x1B, 0x7A, 0x50]
 
+all_devices = [dining_room, living_room, ikea_lamp1, ikea_lamp2, outdoor, light]
 
 def dbg(obj, level, msg):
     if obj.debug >= level:
@@ -56,6 +57,8 @@ def dbg(obj, level, msg):
     else:
         pass
 
+##########################################################################################
+#
 
 def GetDecAddress(address):
     '''
@@ -63,8 +66,70 @@ def GetDecAddress(address):
     '''
     return [int(h) for h in address] 
 
+def SplitStr(s, size=2):
+    return [s[i:i+size] for i in xrange(0, len(s), size)]
+
+def str2hex(address):
+    return [int(i,16) for i in address.split('.')]
+
+def hex2str(address):
+    return '%02x.%02x.%02x' % (address[0],address[1],address[2])
+
+def hex2dec(address):
+    return [int(h) for h in address] 
+
+def str2dec(s):
+    return [int(i,16) for i in SplitStr(s)]
+
+def build_message(hex_address, flag, cmd1, cmd2):
+    cmd      = [0x02, 98]
+    cmd.extend(GetDecAddress(hex_address))
+    cmd.append(flag)
+    cmd.append(cmd1)    
+    cmd.append(cmd2)
+    hex_cmd = ''.join(chr(x) for x in cmd)
+    return hex_cmd
+
+def parse_flag(flag):
+    bit_765 = flag >> 5
+    bit_765_dict = {
+     0 : 'Direct Message',
+     1 : 'ACK of Direct Message',
+     2 : 'Group Cleanup Direct Message',
+     3 : 'ACK of Group Cleanup Direct Message',
+     4 : 'Broadcast Message',
+     5 : 'NAK of Direct Message',    
+     6 : 'Group Broadcast Message',     
+     7 : 'NAK of Group Cleanup Direct Message'
+    }
+    if flag & 16 == 16:
+        message = 'extended message'
+    else:
+        message = 'standard message'
+
+    hops_left = (flag >> 2) & 3
+    max_hops = flag & 3
+    return [bit_765_dict.get(bit_765), message,hops_left,max_hops] 
+
+def parse_configuration_flags(flag):
+    return [['automatic linking disabled', flag & 128 == 128],
+            ['Monitor Mode enabled', flag & 64 == 64],
+            ['Disables automatic LED', flag & 32 == 32],
+            ]
+    
+def parse_buffer(buff):
+    cmd = []
+    unparsed = []
+    for byte in buff:
+        if byte == 2:
+            cmd.append(byte)
+
+#    
+#
 ##########################################################################################
 #
+#
+
 class RedisSub(Thread):
 
     def __init__(self, interface, channel='cmd', host='127.0.0.1'):
@@ -106,7 +171,8 @@ class RedisSub(Thread):
                         try:
                             cmd_obj = deserialize(cmd)
                             print cmd_obj
-                            self.interface.send_standard_cmd(cmd_obj[0], cmd_obj[1], cmd_obj[2])
+                            res = self.interface.send_standard_cmd(cmd_obj[0], cmd_obj[1], cmd_obj[2])
+
 
                         except Exception as E:
                             error_msg = {'source' : 'serinsteon:RedisSub', 'function' : 'def run(self):', 'error' : E.message}
@@ -279,8 +345,7 @@ class InsteonPLM(object):
             dbg_msg = "did not recive expected number of bytes within the time out period"
             return_data = -1            
         dbg(self, 3, dbg_msg)
-        return return_data
-        
+        return return_data      
         
     def read(self):
         dbg(self, 2, "def read(self):")
