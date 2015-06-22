@@ -152,7 +152,7 @@ devices = {
 '09.8E.94' : 'living_room',
 '18.98.AA' : 'livingroom_dimmer',
 '16.83.87' : 'livingroom_lamp_sw',
-'14.a1.28' :'20.1f.11' 'outdoor',
+'14.a1.28' : 'outdoor',
 '20.1f.11' : 'light',
 '1D.AD.86' : 'bedroom',
 '1B.7A.50' : 'unused_se',
@@ -462,7 +462,7 @@ class InsteonSub(Thread):
         self.Log.debug('end of run()')
 
 def main(test=False):
-    plm = InsteonPLM('/dev/ttyUSB1')
+    plm = InsteonPLM('/dev/ttyUSB0')
     plmsub = InsteonSub(plm)
     plmsub.log.level = 50
 
@@ -475,3 +475,22 @@ def main(test=False):
 if __name__ == '__main__':
     print "================================"
     main()
+
+
+# TODO - add this to the main class
+# import time
+# # SETUP LINKING
+# #parse(res)
+# I.uart.write(i.cmd2str([0x02, 0x64, 0x01,0x10]))
+# time.sleep(1)
+# res1 = I.read()
+
+# flag = 0x1f
+# cmd1 = 0x09
+# cmd2 = 0x01
+# data = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+# cmd = i.build_ex_message("14.a1.28", flag, cmd1, cmd2, data)
+# i.cmd2str(cmd)
+# I.uart.write(i.cmd2str(cmd))
+# time.sleep(1)
+# res = I.read()

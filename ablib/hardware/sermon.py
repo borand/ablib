@@ -23,8 +23,7 @@ import simplejson as sjson
 import logbook
 import redis
 
-from threading import Thread,Event
-from Queue import Queue
+import threading
 from datetime import datetime
 from logbook import Logger
 from docopt import docopt
@@ -35,64 +34,11 @@ from ablib.util.common import get_host_ip
 
 ##########################################################################################
 # Global definitions
-PARITY_NONE, PARITY_EVEN, PARITY_ODD = 'N', 'E', 'O'
-STOPBITS_ONE, STOPBITS_TWO = (1, 2)
-FIVEBITS, SIXBITS, SEVENBITS, EIGHTBITS = (5,6,7,8)
-TIMEOUT = 2
-
+TIMEOUT  = 2
 EXCHANGE = 'ComPort'
 
 ##########################################################################################
-#
-class RedisSub(Thread):
-
-    def __init__(self, interface, channel='cmd', host='127.0.0.1'):
-        Thread.__init__(self)
-        self.interface = interface
-        self.signature = "{0:s}:{1:s}".format(get_host_ip(), self.interface.serial.port)
-        self.redis     = redis.Redis(host=host)
-        self.channel   = self.signature+"-cmd"
-        self.pubsub    = self.redis.pubsub()
-        self.Log       = Logger('RedisSub')
-        self.Log.debug('__init__(channel=%s)' % self.channel)
-
-        self.pubsub.subscribe(self.channel)
-        self.start()
-        self.setName('RedisSub-Thread')
-
-    def __del__(self):        
-        self.Log.info('__del__()')
-        self.stop()
-
-    def stop(self):
-        self.Log.info('stop()')
-        self.redis.publish(self.channel,'unsubscribe')
-        time.sleep(1)        
-        self.Log.info('stopped')
-
-    def run(self):
-        self.Log.debug('run()')
-        try:
-            for item in self.pubsub.listen():
-                if item['data'] == "unsubscribe":
-                    self.pubsub.unsubscribe()
-                    self.Log.info("unsubscribed and finished")
-                    break
-                else:
-                    cmd = item['data']
-                    if isinstance(cmd,str):
-                        self.Log.debug(cmd)
-                        self.interface.send(item['data'])
-                    else:
-                        self.Log.debug(cmd)
-        except Exception as E:
-            error_msg = {'source' : 'RedisSub', 'function' : 'def run(self):', 'error' : E.message}
-            self.redis.publish('error',sjson.dumps(error_msg))
-                
-        self.Log.debug('end of run()')
-
-##########################################################################################
-class ComPort(Thread):
+class ComPort(object):
     re_data        = re.compile(r'(?:<)(?P<cmd>\d+)(?:>)(.*)(?:<\/)(?P=cmd)(?:>)', re.DOTALL)
     re_next_cmd    = re.compile("(?:<)(\d+)(?:>\{\"cmd\":\")")
 
@@ -102,9 +48,9 @@ class ComPort(Thread):
                  port = '/dev/ttyUSB0',
                  packet_timeout=1,
                  baudrate=115200,       
-                 bytesize=EIGHTBITS,    
-                 parity=PARITY_NONE,    
-                 stopbits=STOPBITS_ONE, 
+                 bytesize=8,    
+                 parity='N',    
+                 stopbits=1, 
                  xonxoff=0,             
                  rtscts=0,              
                  writeTimeout=None,     
@@ -112,14 +58,17 @@ class ComPort(Thread):
                  host='127.0.0.1',
                  run=True):
         
-        Thread.__init__(self)
-
-        self.serial = serial.Serial(port, baudrate, bytesize, parity, stopbits, packet_timeout, xonxoff, rtscts, writeTimeout, dsrdtr)
+        self.buffer  = ''
+        self.serial    = serial.Serial(port, baudrate, bytesize, parity, stopbits, packet_timeout, xonxoff, rtscts, writeTimeout, dsrdtr)
         self.signature = "{0:s}:{1:s}".format(get_host_ip(), self.serial.port)
+        
         self.redis_send_key = self.signature+'-send'
         self.redis_read_key = self.signature+'-read'
-        self.log = Logger(self.signature)
         self.redis = redis.Redis(host=host)
+        self.log   = Logger(self.signature)
+
+        self.alive = False
+        self._reader_alive = False
 
         # TODO add checking for redis presence and connection
         if self.redis.ping():
@@ -128,13 +77,10 @@ class ComPort(Thread):
                 self.redis.sadd(EXCHANGE,self.signature)
         else:
             pass
-
-        self.running = Event()
-        self.buffer  = ''
+        
         if run:
-            self.start_thread()
-
-        self.log.debug('ComPort(is_alive=%d, serial_port_open=%d, redis_host=%s)' % (self.is_alive(), not self.serial.closed, host))
+            pass
+            #self.start_thread()
 
     def __del__(self):
         self.log.debug("About to delete the object")
@@ -151,6 +97,28 @@ class ComPort(Thread):
 
         if self.redis.sismember('ComPort',self.signature):
             self.redis.srem('ComPort',self.signature)
+    
+    # Thread control
+    def _start_reader(self):
+        """Start reader thread"""
+        self.alive           = True
+        self._reader_alive   = True
+        self.receiver_thread = threading.Thread(target=self.reader)
+        self.receiver_thread.setDaemon(True)
+        self.receiver_thread.start()
+
+    def _stop_reader(self):
+        """Stop reader thread only, wait for clean exit of thread"""
+        self._reader_alive = False
+        self.receiver_thread.join()
+
+    def stop(self):
+        self.alive = False
+
+    def join(self, transmit_only=False):
+        self.transmitter_thread.join()
+        if not transmit_only:
+            self.receiver_thread.join()
         
     def start_thread(self):
         '''
@@ -243,9 +211,12 @@ class ComPort(Thread):
         Close the listening thread.
         '''
         self.log.debug('close() - closing the worker thread')
-        self.running.clear()
+        self.alive = False
+        self._reader_alive = False
+        self.receiver_thread.join()
 
-    def run(self):
+
+    def reader(self):
         '''
         Run is the function that runs in the new thread and is called by
         start(), inherited from the Thread class
@@ -255,13 +226,13 @@ class ComPort(Thread):
             self.log.debug('Starting the listner thread')
             Msg = Message(self.signature)
 
-            while(self.running.isSet()):
-                bytes_in_waiting = self.serial.inWaiting()                
+            while self.alive and self._reader_alive:
+                bytes_in_waiting = self.serial.inWaiting()
                 
                 if bytes_in_waiting:
                     new_data = self.serial.read(bytes_in_waiting)
                     self.buffer = self.buffer + new_data
-                    #self.log.debug('found %d bytes inWaiting' % bytes_in_waiting)
+                    self.log.debug('found %d bytes inWaiting' % bytes_in_waiting)
 
                 crlf_index = self.buffer.find('\r\n')
 
