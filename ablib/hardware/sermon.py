@@ -79,8 +79,8 @@ class ComPort(object):
             pass
         
         if run:
-            pass
-            #self.start_thread()
+            self._start_reader()
+            self._start_listner()
 
     def __del__(self):
         self.log.debug("About to delete the object")
@@ -111,6 +111,38 @@ class ComPort(object):
         """Stop reader thread only, wait for clean exit of thread"""
         self._reader_alive = False
         self.receiver_thread.join()
+
+    def _start_listner(self):        
+        self._redis_subscriber_alive = True
+        self.redis_subscriber_thread = threading.Thread(target=self.cmd_via_redis_subscriber)
+        self.redis_subscriber_thread.setDaemon(True)
+        self.redis_subscriber_thread.start()
+
+    def cmd_via_redis_subscriber(self):
+        self.log.debug('cmd_via_redis_subscriber()')
+        self.pubsub    = self.redis.pubsub()
+        self.pubsub.subscribe("cmd")
+        
+        while self._redis_subscriber_alive:
+            try:
+                for item in self.pubsub.listen():
+                    if item['data'] == "unsubscribe":
+                        self.pubsub.unsubscribe()
+                        self.log.info("unsubscribed and finished")
+                        break
+                    else:
+                        cmd = item['data']
+                        if isinstance(cmd,str):
+                            self.log.debug(cmd)
+                            self.send(item['data'])
+                        else:
+                            self.log.debug(cmd)
+            except Exception as E:
+                error_msg = {'source' : 'RedisSub', 'function' : 'def run(self):', 'error' : E.message}
+                self.redis.publish('error',sjson.dumps(error_msg))
+                
+        self.log.debug('end of cmd_via_redis_subscriber()')
+
 
     def stop(self):
         self.alive = False
@@ -213,6 +245,7 @@ class ComPort(object):
         self.log.debug('close() - closing the worker thread')
         self.alive = False
         self._reader_alive = False
+        self._redis_subscriber_alive = False
         self.receiver_thread.join()
 
 
