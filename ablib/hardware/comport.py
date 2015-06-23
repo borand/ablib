@@ -251,7 +251,7 @@ class ComPort(Thread):
         start(), inherited from the Thread class
         '''
         
-        try:            
+        try:
             self.log.debug('Starting the listner thread')
             Msg = Message(self.signature)
 
