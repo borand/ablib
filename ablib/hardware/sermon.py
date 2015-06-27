@@ -251,8 +251,7 @@ class ComPort(object):
 
     def reader(self):
         '''
-        Run is the function that runs in the new thread and is called by
-        start(), inherited from the Thread class
+        Run is the function that runs in the new thread and is called by        
         '''
         
         try:
@@ -264,16 +263,15 @@ class ComPort(object):
                 
                 if bytes_in_waiting:
                     new_data = self.serial.read(bytes_in_waiting)
-                    self.buffer = self.buffer + new_data
-                    self.log.debug('found %d bytes inWaiting' % bytes_in_waiting)
+                    self.buffer = self.buffer + new_data                    
 
                 crlf_index = self.buffer.find('\r\n')
 
                 if crlf_index > -1:
-                    # self.log.debug('read line: ' + line)
                     line = self.buffer[0:crlf_index]
                     temp = self.re_data.findall(line)
-                                       
+                    self.log.debug('read line: ' + line)
+
                     if len(temp):
                         final_data = dict()
                         timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
@@ -282,18 +280,26 @@ class ComPort(object):
                         try:
                             final_data.update({'cmd_number' : sjson.loads(temp[0][0])})
                             final_data.update(sjson.loads(temp[0][1]))
+                            self.log.debug('.....updated final_data')
 
                         except Exception as E:
                             final_data.update({'cmd_number' : -1})
                             error_msg = {'timestamp' : timestamp, 'from': self.signature, 'source' : 'ComPort', 'function' : 'def run() - inner', 'error' : E.message}
                             Msg.msg = error_msg
                             self.redis.publish('error',error_msg)
+                            self.log.error(Msg.msg)
 
                         Msg.msg = final_data
                         self.redis.publish(self.redis_pub_channel, Msg.as_jsno())
+                        self.log.debug('.....publish to :' + self.redis_pub_channel)
                         self.redis.set(self.redis_read_key,Msg.as_jsno())
 
-                    self.buffer = self.buffer[crlf_index+2:]
+                        self.buffer = self.buffer[crlf_index+2:]
+                        self.log.debug('.....empty buffer')
+                    else:
+                        self.buffer = ''
+                        self.send('Z')
+                        self.log.debug('.....reseting command number')
 
         except Exception as E:
             error_msg = {'source' : 'ComPort', 'function' : 'def run() - outter', 'error' : E.message}
