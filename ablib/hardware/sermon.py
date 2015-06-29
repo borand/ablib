@@ -28,6 +28,8 @@ from datetime import datetime
 from logbook import Logger
 from docopt import docopt
 
+from redislog import handlers, logger
+
 # MY MODULES
 from ablib.util.message import Message
 from ablib.util.common import get_host_ip
@@ -36,6 +38,9 @@ from ablib.util.common import get_host_ip
 # Global definitions
 TIMEOUT  = 2
 EXCHANGE = 'ComPort'
+
+#l = logger.RedisLogger('ablib.hw.sermon')
+#l.addHandler(handlers.RedisHandler.to("log:sermon", host='localhost', port=6379, password=''))
 
 ##########################################################################################
 class ComPort(object):
@@ -65,7 +70,10 @@ class ComPort(object):
         self.redis_send_key = self.signature+'-send'
         self.redis_read_key = self.signature+'-read'
         self.redis = redis.Redis(host=host)
-        self.log   = Logger(self.signature)
+        #self.log   = Logger(self.signature)
+        self.log    = logger.RedisLogger('sermon.py:ComPort')
+        self.log.addHandler(handlers.RedisHandler.to("log:sermon", host='localhost', port=6379))
+
 
         self.alive = False
         self._reader_alive = False
@@ -142,7 +150,6 @@ class ComPort(object):
                 self.redis.publish('error',sjson.dumps(error_msg))
                 
         self.log.debug('end of cmd_via_redis_subscriber()')
-
 
     def stop(self):
         self.alive = False
@@ -247,7 +254,6 @@ class ComPort(object):
         self._reader_alive = False
         self._redis_subscriber_alive = False
         self.receiver_thread.join()
-
 
     def reader(self):
         '''
