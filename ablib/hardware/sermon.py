@@ -342,9 +342,6 @@ if __name__ == '__main__':
     if run_local:
         redis_host = 'localhost'
     
-    C = ComPort(dev, host=redis_host)
-    C.log.level = logbook.DEBUG
-    
     if test_json:
         cmd_vector = ['idn', 'adc', 'dio', 'getwh', 'resetwh', 'peek 22', 'owrom', 'owsave 1','owload', \
                   'owsp','owdata','owwp 3 1', 'owrp 3', 'adsf']
@@ -356,14 +353,12 @@ if __name__ == '__main__':
                 print E    
     
     if run_main:
-        R = RedisSub(C, host=redis_host)
+        C = ComPort(dev, host=redis_host)
         try:
             while True:
                 pass
         except KeyboardInterrupt:
             pass
-        R.stop()
-
     C.close()
 
     print "All done"
