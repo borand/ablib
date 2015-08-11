@@ -11,8 +11,8 @@ Options:
   -h, --help
   --dev=DEV              [default: /dev/ttyUSB0]
   --run=RUN              [default: True]
-  --submit_to=SUBMIT_TO  [default: 192.168.1.10]
-  --redishost=REDISHOST  [default: 192.168.1.10]
+  --submit_to=SUBMIT_TO  [default: 127.0.0.1]
+  --redishost=REDISHOST  [default: 127.0.0.1]
 
 """
 
@@ -69,10 +69,10 @@ class ComPort(object):
         
         self.redis_send_key = self.signature+'-send'
         self.redis_read_key = self.signature+'-read'
-        self.redis = redis.Redis(host=host)
-        #self.log   = Logger(self.signature)
-        self.log    = logger.RedisLogger('sermon.py:ComPort')
-        self.log.addHandler(handlers.RedisHandler.to("log:sermon", host='localhost', port=6379))
+        self.redis = redis.Redis(host=host)        
+        self.log   = logger.RedisLogger('sermon.py:ComPort')
+        self.log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
+        self.log.level = 1
 
 
         self.alive = False
@@ -109,6 +109,7 @@ class ComPort(object):
     # Thread control
     def _start_reader(self):
         """Start reader thread"""
+        self.log.debug("Start serial port reader thread")
         self.alive           = True
         self._reader_alive   = True
         self.receiver_thread = threading.Thread(target=self.reader)
@@ -117,10 +118,12 @@ class ComPort(object):
 
     def _stop_reader(self):
         """Stop reader thread only, wait for clean exit of thread"""
+        self.log.debug("Stop reader thread only, wait for clean exit of thread")
         self._reader_alive = False
         self.receiver_thread.join()
 
-    def _start_listner(self):        
+    def _start_listner(self):
+        self.log.debug("Start redis sub channel and listen for commands send via redis")
         self._redis_subscriber_alive = True
         self.redis_subscriber_thread = threading.Thread(target=self.cmd_via_redis_subscriber)
         self.redis_subscriber_thread.setDaemon(True)
@@ -325,19 +328,27 @@ def main(**kwargs):
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Naval Fate 2.0')
-    print("===============================================")
-    print(arguments)
+    
+    mainlog   = logger.RedisLogger('sermon.py:main')
+    mainlog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
+    mainlog.level = 10
+
+    mainlog.info("===============================================")
+    mainlog.info(arguments)
 
     dev = arguments['--dev']
 
-    print("===============================================")
-    print(dev)
+    mainlog.info("===============================================")
+    mainlog.info(dev)
 
 
-    test_json  = arguments['--test']
+    test_json  = arguments['test']
     run_main   = arguments['run']
     redis_host = arguments.get('--redishost',get_host_ip())
     run_local  = arguments.get('--local',False)
+
+    C = ComPort(dev, host=redis_host)
+    C.log.level = 10
 
     if run_local:
         redis_host = 'localhost'
@@ -348,12 +359,11 @@ if __name__ == '__main__':
         for cmd in cmd_vector:
             try:
                 out = C.query(cmd)
-                print out
+                mainlog.info(out)
             except Exception as E:
-                print E    
+                mainlog.info(E)
     
-    if run_main:
-        C = ComPort(dev, host=redis_host)
+    if run_main:        
         try:
             while True:
                 pass
@@ -361,4 +371,5 @@ if __name__ == '__main__':
             pass
     C.close()
 
-    print "All done"
+    mainlog.info("All done")
+    print("All done")

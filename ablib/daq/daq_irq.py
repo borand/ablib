@@ -46,6 +46,10 @@ def process_default(data):
     print("process_default({})".format(data))
     return data[1]
 
+def process_1wire_thermometer(data):
+    print("process_default({})".format(data))
+    return data[1]
+
 ProcessingFunctions = {'hydro_power' : process_hydro_power_data,\
                        'hydro_wh'    : process_hydro_wh_data,\
                        }
