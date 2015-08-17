@@ -3,6 +3,7 @@ import re
 import serial
 import os
 import redis
+import threading
 
 from threading import Thread,Event
 from ablib.util.common import get_host_ip
@@ -147,7 +148,7 @@ def parse(buf, process=True):
 
 ###########################################################################################################
 devices = {
-'19.74.73' : 'Serial PLM',
+#'19.74.73' : 'Serial PLM',
 '18.1d.04' : 'dining_room',
 '09.8E.94' : 'living_room',
 '18.98.AA' : 'livingroom_dimmer',
@@ -155,8 +156,11 @@ devices = {
 '14.a1.28' : 'outdoor',
 '20.1f.11' : 'light',
 '1D.AD.86' : 'bedroom',
-'1B.7A.50' : 'unused_se',
+# '1B.7A.50' : 'unused_se',
 }
+
+device_by_location = {v: k for k, v in devices.items()}
+
 
 ###########################################################################################################
 # http://www.insteon.com/pdf/insteon_developers_guide_20070816a.pdf pg 223
@@ -248,15 +252,23 @@ class InsteonPLM(object):
     def __init__(self, port='/dev/ttyUSB0'):
         '''        
         '''
+        self.Log       = Logger('InsteonPLM')        
+        self.channel   = "cmd:insteon"
+        self.redis     = redis.Redis()
+        self.pubsub    = self.redis.pubsub()        
+
         if os.name == 'nt':
             port = port -1
         try:        
             self.uart = serial.Serial(port=port, baudrate=19200, timeout=3)
-            self.uart.timeout = 1
+            self.uart.timeout = 1            
         except:
             self.uart = None
-            print "Error occured while oppening serial Interface"
-    
+            print("Error occured while oppening serial Interface")        
+        
+        self.Log.debug('__init__(port={0}, channel={1})'.format(port, self.channel))
+        self._start_listner()
+
     def __del__(self):        
         if self.is_open():
             self.uart.close()
@@ -366,27 +378,90 @@ class InsteonPLM(object):
             return_data = data
         else:
             dbg_msg = "did not recive expected number of bytes within the time out period"
-            return_data = self.read()
+            response += self.read()
+            data = [ord(x) for x in response]
+            return_data = data
             
         return [return_data, leftover_buffer]
-
 
     def send_sd_cmd(self, *args):
         cmd    = build_sd_message(args[0], 15, args[1], args[2])
         res    = self.query(cmd)
         parsed = parse(res[0])[0]        
-        ack_received = parsed[1][2]['flag'][1][0] == 1
-        if ack_received:
-            return [parsed[1][2]['cmd2'], parsed]
+        if len(parsed) > 1:
+            ack_received = parsed[1][2]['flag'][1][0] == 1
+            if ack_received:
+                return [parsed[1][2]['cmd2'], parsed]            
+        return None
+###########################################################################################################
+# REDIS Thread
+#
+    def _start_listner(self):
+        self.Log.debug("Start redis sub channel and listen for commands send via redis")
+        self._redis_subscriber_alive = True
+        self.redis_subscriber_thread = threading.Thread(target=self.cmd_via_redis_subscriber)
+        self.redis_subscriber_thread.setDaemon(True)
+        self.redis_subscriber_thread.start()
+
+    def _stop_thread(self):
+        self.Log.debug("_stop_thread()")
+        self._redis_subscriber_alive = False
+        self.redis.publish(self.channel,'unsubscribe')
+        self.redis_subscriber_thread.join(3)
+        if self.redis_subscriber_thread.is_alive():
+            self.Log.debug("thread stopped()")
         else:
-            return None
+            self.Log.debug("thread still alive after 3 delay")
+
+    def cmd_via_redis_subscriber(self):
+        self.Log.debug('cmd_via_redis_subscriber()')        
+        self.pubsub.subscribe(self.channel)
+        
+        while self._redis_subscriber_alive:
+            try:
+                for item in self.pubsub.listen():
+                    if item['data'] == "unsubscribe":
+                        self.pubsub.unsubscribe()
+                        self.Log.info("unsubscribed and finished")
+                        break
+                    else:
+                        cmd = item['data']
+                        if isinstance(cmd,str):
+                            self.Log.debug(cmd)
+                            try:
+                                cmd_obj = deserialize(cmd)
+                                res = self.send_sd_cmd(cmd_obj[0], cmd_obj[1], cmd_obj[2])
+                                self.redis.publish(self.channel+"_res", serialize(res))
+
+                            except Exception as E:
+                                error_msg = {'source' : 'serinsteon:RedisSub', 'function' : 'def run(self):', 'error' : E.message}
+                                self.redis.publish('error',serialize(error_msg))
+
+                        else:
+                            self.Log.debug(cmd)
+            except Exception as E:
+                error_msg = {'source' : 'InsteonSub', 'function' : 'def run(self):', 'error' : E.message}
+                self.redis.publish('error',serialize(error_msg))
+        self.Log.debug('end of cmd_via_redis_subscriber()')
+
 
 ###########################################################################################################
 # HIGH LEVEL FUNCTIONS
 #
+    def Ping(self, addr):
+        out = self.send_sd_cmd(addr, 0x0f, 0)
+        if out is None:
+            return False
+        if out[0] == 0:
+            return True
+        else:
+            return False
+
 
     def GetLightLevel(self, addr):
         out = self.send_sd_cmd(addr, 25, 0)
+        if out is None:
+            return -1
         return round(float(out[0])/2.55)
 
     def SetLightLevel(self, addr, level):
@@ -403,6 +478,19 @@ class InsteonPLM(object):
     def SetSwOn(self, addr):    
         out = self.send_sd_cmd(addr, 17, 255)
         return out
+
+    def GetStatusOfAllDevices(self, devices):
+        data = []
+        for k, v in devices.items():
+            if self.Ping(k):
+                stat = self.GetLightLevel(k)
+            else:                
+                stat = -1
+
+            data.append([k, stat, v])
+            print v, k, stat
+
+        return data
 
 ###########################################################################################################
 # HIGH LEVEL FUNCTIONS

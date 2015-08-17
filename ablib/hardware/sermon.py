@@ -151,7 +151,8 @@ class ComPort(object):
             except Exception as E:
                 error_msg = {'source' : 'RedisSub', 'function' : 'def run(self):', 'error' : E.message}
                 self.redis.publish('error',sjson.dumps(error_msg))
-                
+        
+        self.pubsub.unsubscribe()      
         self.log.debug('end of cmd_via_redis_subscriber()')
 
     def stop(self):
