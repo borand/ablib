@@ -9,8 +9,8 @@ Usage:
 
 Options:
   -h, --help  
-  --submit_to=SUBMIT_TO  [default: 192.168.1.10]
-  --redishost=REDISHOST  [default: 192.168.1.10]
+  --submit_to=SUBMIT_TO  [default: 192.168.1.60]
+  --redishost=REDISHOST  [default: 127.0.0.1]
 
 """
 
@@ -39,15 +39,15 @@ def process_hydro_power_data(data):
         return -1
 
 def process_hydro_wh_data(data):
-    print("process_hydro_wh_data({})".format(data))
+    #print("process_hydro_wh_data({})".format(data))
     return data[2]
 
 def process_default(data):
-    print("process_default({})".format(data))
+    #print("process_default({})".format(data))
     return data[1]
 
 def process_1wire_thermometer(data):
-    print("process_default({})".format(data))
+    #print("process_default({})".format(data))
     return data[1]
 
 ProcessingFunctions = {'hydro_power' : process_hydro_power_data,\
@@ -57,7 +57,7 @@ ProcessingFunctions = {'hydro_power' : process_hydro_power_data,\
 ##########################################################################################
 class IrqSubmit(threading.Thread):
 
-    def __init__(self, channel='irq', host='192.168.1.10', submit_to='192.168.1.10'):
+    def __init__(self, channel='irq', host='127.0.0.1', submit_to='192.168.1.60'):
         threading.Thread.__init__(self)        
         self.redis     = Redis(host=host)
         self.submit_to = submit_to
@@ -115,11 +115,13 @@ class IrqSubmit(threading.Thread):
                 sn                  = data[0]
                 processing_function = ProcessingFunctions.get(sn,process_default)
                 val                 = processing_function(data)
-                print("Final dataset : sn = {0}, val = {1}".format(sn, val))
+                
 
                 threshold   = 0
                 submit_data = [[sn, val]]
-                self.last_enqueue = self.Q.enqueue(submit, submit_data,\
+                if len(sn):
+                    print("Final dataset : sn = {0}, val = {1}".format(sn, val))
+                    self.last_enqueue = self.Q.enqueue(submit, submit_data,\
                                     timestamp=timestamp,\
                                     submit_to=self.submit_to,\
                                     threshold=threshold)
@@ -249,7 +251,7 @@ if __name__ == "__main__":
     print(arguments)
 
     if arguments['run']:
-        channel   = 'rtweb'
+        channel   = 'data'
         host      = arguments.get('--redishost', get_host_ip())
         submit_to = arguments.get('--submit_to', get_host_ip())
         StartIqrSubmit(channel, host, submit_to)

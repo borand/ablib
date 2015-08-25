@@ -9,7 +9,7 @@ Usage:
 
 Options:
   -h, --help
-  --dev=DEV              [default: /dev/ttyUSB0]
+  --dev=DEV              [default: /dev/arduino]
   --run=RUN              [default: True]
   --submit_to=SUBMIT_TO  [default: 127.0.0.1]
   --redishost=REDISHOST  [default: 127.0.0.1]
@@ -47,7 +47,7 @@ class ComPort(object):
     re_data        = re.compile(r'(?:<)(?P<cmd>\d+)(?:>)(.*)(?:<\/)(?P=cmd)(?:>)', re.DOTALL)
     re_next_cmd    = re.compile("(?:<)(\d+)(?:>\{\"cmd\":\")")
 
-    redis_pub_channel = 'rtweb'
+    redis_pub_channel = 'data'
     
     def __init__(self,
                  port = '/dev/ttyUSB0',
@@ -328,8 +328,7 @@ def main(**kwargs):
         pass    
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='Naval Fate 2.0')
-    
+    arguments = docopt(__doc__, version='Naval Fate 2.0')    
     mainlog   = logger.RedisLogger('sermon.py:main')
     mainlog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
     mainlog.level = 10
@@ -364,7 +363,7 @@ if __name__ == '__main__':
             except Exception as E:
                 mainlog.info(E)
     
-    if run_main:        
+    if run_main:
         try:
             while True:
                 pass
