@@ -18,11 +18,16 @@ import serial
 import os
 import redis
 import threading
+from datetime import datetime
+from time import sleep
 from docopt import docopt
+from ablib.util.message import Message
 
 from threading import Thread,Event
 from ablib.util.common import get_host_ip
+
 from logbook import Logger
+#from redislog import handlers, logger
 
 from anyjson import serialize, deserialize
 
@@ -445,13 +450,34 @@ class InsteonPLM(object):
                         cmd = item['data']
                         if isinstance(cmd,str):
                             self.Log.debug(cmd)
+                            
                             try:
                                 cmd_obj = deserialize(cmd)
-                                res = self.send_sd_cmd(cmd_obj[0], cmd_obj[1], cmd_obj[2])
-                                self.redis.publish(self.channel+"_res", serialize(res))
+                                if isinstance(cmd_obj, dict):
+                                    cmd_str = cmd_obj['cmd']                                    
+                                    if cmd_str == 'GetStatusOfAllDevices':
+                                        res = self.GetStatusOfAllDevices()
+                                        final_data = dict()
+                                        timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+                                        final_data['timestamp'] = timestamp
+                                        final_data['raw']       = res
+                                        final_data['data']      = res
+                                        M = Message('InsteonPLM')
+                                        M.msg = final_data
+                                        self.redis.publish("data", M.as_json())
+                                    if cmd_str == 'GetLightLevel':
+                                        pass
+                                    if cmd_str == 'SetSwOn':
+                                        pass
+                                    if cmd_str == 'SetSwOff':
+                                        pass
+
+                                else:
+                                    res = self.send_sd_cmd(cmd_obj[0], cmd_obj[1], cmd_obj[2])
+                                    self.redis.publish(self.channel+"_res", serialize(res))
 
                             except Exception as E:
-                                error_msg = {'source' : 'serinsteon:RedisSub', 'function' : 'def run(self):', 'error' : E.message}
+                                error_msg = {'source' : 'serinsteon:cmd_via_redis_subscriber', 'function' : 'def run(self):', 'error' : E.message}
                                 self.redis.publish('error',serialize(error_msg))
 
                         else:
@@ -494,13 +520,15 @@ class InsteonPLM(object):
         out = self.send_sd_cmd(addr, 17, 255)
         return out
 
-    def GetStatusOfAllDevices(self, devices):
+    def GetStatusOfAllDevices(self, devices=devices):
         data = []
         for k, v in devices.items():
-            if self.Ping(k):
+            for i in range(2):
                 stat = self.GetLightLevel(k)
-            else:                
-                stat = -1
+                if stat == -1:
+                    sleep(0.1)
+                else:
+                    break
 
             data.append([k, stat, v])
             print v, k, stat

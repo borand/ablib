@@ -106,10 +106,15 @@ class IrqSubmit(threading.Thread):
     def process_message(self, item):
         self.Log.debug('process_message()')
         try:
+            #print("   item = {0}".format(item))
 
             msg         = sjson.loads(item['data'])
+            #print("   msg = {0}".format(msg))
+
             device_data = msg['MSG']['data']
-            timestamp   = msg['MSG']['timestamp']
+            timestamp   = msg['MSG']['timestamp']            
+
+            #print("   msg = {0}".format(msg))
 
             for data in device_data:
                 sn                  = data[0]
@@ -127,7 +132,7 @@ class IrqSubmit(threading.Thread):
                                     threshold=threshold)
 
         except Exception as E:
-            self.Log.error("print_message(): " + E.message)
+            self.Log.error("process_message(): " + E.message)
             self.Log.error(item)
 
     def print_message(self, item):
