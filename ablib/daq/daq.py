@@ -3,6 +3,7 @@ import docopt
 import time
 import simplejson
 from logbook import Logger
+from redislog import handlers, logger
 from redis import Redis
 from rq import Queue
 from ablib.daq.datastore import submit
@@ -24,14 +25,16 @@ ProcessingFunctions = {'default' : process_default,\
 ##########################################################################################
 class Daq(threading.Thread):
 
-    def __init__(self, channel='daq', host='192.168.1.10', submit_to='192.168.1.10'):
+    def __init__(self, channel='daq', host='127.0.0.1', submit_to='127.0.0.1'):
         threading.Thread.__init__(self)
         self.channel   = channel
         self.redis     = Redis(host=host)
         self.submit_to = submit_to
         self.Q         = Queue(connection=Redis())
         self.last_q    = []
-        self.Log       = Logger('Daq')
+        #self.Log       = Logger('Daq')
+        self.Log       = logger.RedisLogger('daq.py:Daq')
+        self.log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))        
 
         self.pubsub.subscribe(self.channel)
         self.start()

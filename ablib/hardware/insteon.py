@@ -26,7 +26,8 @@ from ablib.util.message import Message
 from threading import Thread,Event
 from ablib.util.common import get_host_ip
 
-from logbook import Logger
+#from logbook import Logger
+from redislog import handlers, logger
 #from redislog import handlers, logger
 
 from anyjson import serialize, deserialize
@@ -272,7 +273,9 @@ class InsteonPLM(object):
     def __init__(self, port='/dev/ttyUSB0'):
         '''        
         '''
-        self.Log       = Logger('InsteonPLM')        
+        #self.Log       = Logger('InsteonPLM')
+        self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
+        self.log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))        
         self.channel   = "cmd:insteon"
         self.redis     = redis.Redis()
         self.pubsub    = self.redis.pubsub()        
@@ -540,7 +543,7 @@ class InsteonPLM(object):
 #
 def main(test=False):
     plm = InsteonPLM('/dev/insteon_plm')
-    plmsub.log.level = 50
+    plm.log.level = 50
 
     try:
         while True:

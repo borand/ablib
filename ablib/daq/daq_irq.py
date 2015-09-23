@@ -9,7 +9,7 @@ Usage:
 
 Options:
   -h, --help  
-  --submit_to=SUBMIT_TO  [default: 192.168.1.60]
+  --submit_to=SUBMIT_TO  [default: 127.0.0.1]
   --redishost=REDISHOST  [default: 127.0.0.1]
 
 """
@@ -57,7 +57,7 @@ ProcessingFunctions = {'hydro_power' : process_hydro_power_data,\
 ##########################################################################################
 class IrqSubmit(threading.Thread):
 
-    def __init__(self, channel='irq', host='127.0.0.1', submit_to='192.168.1.60'):
+    def __init__(self, channel='irq', host='127.0.0.1', submit_to='127.0.0.1'):
         threading.Thread.__init__(self)        
         self.redis     = Redis(host=host)
         self.submit_to = submit_to
@@ -172,69 +172,6 @@ class IrqSubmit(threading.Thread):
         except Exception as E:
             self.Log.error(E.message)
             self.redis.publish('error', E.message)
-
-##########################################################################################
-class Monitor(threading.Thread):
-
-    def __init__(self, channel='rtweb', host='127.0.0.1'):
-        threading.Thread.__init__(self)        
-        self.redis     = Redis(host=host)
-        self.msg_count = 0
-        self.busy      = 0;
-        self.last      = []
-        self.channel   = channel
-        self.pubsub    = self.redis.pubsub()
-        self.Log       = Logger('Monitor')
-        
-        self.pubsub.subscribe(self.channel)
-        self.start()
-        self.setName('Monitor-Thread')
-
-    def __del__(self):        
-        self.Log.info('__del__()')
-        self.stop()
-
-    def stop(self):
-        self.Log.info('stop()')
-        self.busy = False
-        self.redis.publish(self.channel,'KILL')
-        time.sleep(1)        
-        self.Log.info('  stopped')
-
-    def run(self):
-        self.Log.debug('run()')
-        
-        for item in self.pubsub.listen():
-            if item['data'] == "MONITOR_KILL":
-                self.pubsub.unsubscribe()
-                self.Log.info("unsubscribed and finished")
-                break
-            if item['data'] == "ERROR_TEST":
-                self.redis.publish('error', __name__ + ": ERROR_TEST")
-            else:
-                if item['type'] == 'message':
-                    self.process_message(item)
-                #self.process_message(item)
-
-        self.Log.debug('end of run()')
-
-    def process_message(self, item):
-        self.Log.debug('process_message()')
-        try:
-
-            msg         = sjson.loads(item['data'])
-            device_data = msg['MSG']['data']
-            timestamp   = msg['MSG']['timestamp']
-
-            for data in device_data:
-                sn                  = data[0]                
-                processing_function = ProcessingFunctions.get(sn,process_default)
-                val                 = processing_function(data)
-                self.Log.info("Final dataset : sn = {0}, val = {1}".format(sn, val))
-        except Exception as E:
-            self.Log.error("print_message(): " + E.message)
-            self.Log.error(item)
-
 
 def StartIqrSubmit(channel, host, submit_to):
     print"StartIqrSubmit(%s, %s, %s)" % (channel, host, submit_to)
