@@ -43,7 +43,7 @@ def process_hydro_wh_data(data):
     return data[2]
 
 def process_default(data):
-    #print("process_default({})".format(data))
+    print("process_default({})".format(data))
     return data[1]
 
 def process_1wire_thermometer(data):
@@ -104,17 +104,18 @@ class IrqSubmit(threading.Thread):
         self.Log.debug('end of run()')
 
     def process_message(self, item):
-        self.Log.debug('process_message()')
+        #self.Log.debug('process_message()')
+        #print(item)
         try:
             #print("   item = {0}".format(item))
 
             msg         = sjson.loads(item['data'])
-            #print("   msg = {0}".format(msg))
+            print("   msg = {0}".format(msg))
 
             device_data = msg['MSG']['data']
             timestamp   = msg['MSG']['timestamp']            
 
-            #print("   msg = {0}".format(msg))
+            print("   msg = {0}".format(msg))
 
             for data in device_data:
                 sn                  = data[0]
@@ -134,44 +135,6 @@ class IrqSubmit(threading.Thread):
         except Exception as E:
             self.Log.error("process_message(): " + E.message)
             self.Log.error(item)
-
-    def print_message(self, item):
-        try:
-            if item['type'] == 'message':
-                msg = sjson.loads(item['data'])
-                self.last = msg
-                self.Log.debug('    msg=%s' % str(msg))
-                timestamp = datetime.datetime.strptime(msg[0].split('.')[0],"%Y-%m-%d-%H:%M:%S")
-
-                cmd = msg['MSG']['cmd']
-                data = msg[2]['data']
-                submit_data = None
-                threshold   = 0
-                self.Log.debug('process_message(type=%s, cmd=%s)' % (item['type'], cmd))
-                
-                if cmd == 'irq_0':                    
-                    val         = round(3600.0/((pow(2,16)*data[2] + data[3])/16e6*1024))
-                    submit_data = [[0,'power_W',val]]
-                if cmd == 'irq_cWH':
-                    val         = data[0]
-                    submit_data = [[0,'power_cWh',val]]
-                if cmd == 'irq_port_d':
-                    val = data[0]
-                    submit_data = []
-                    threshold   = 1
-                    for bit in range(4):
-                        bit_val = val >> bit & 1
-                        submit_data.append([0,'irq_port_d_%d' % bit, bit_val])
-
-                if submit_data is not None:
-                    self.last_enqueue = self.Q.enqueue(submit, submit_data,\
-                                        timestamp=timestamp,\
-                                        submit_to=self.submit_to,\
-                                        threshold=threshold)
-                
-        except Exception as E:
-            self.Log.error(E.message)
-            self.redis.publish('error', E.message)
 
 def StartIqrSubmit(channel, host, submit_to):
     print"StartIqrSubmit(%s, %s, %s)" % (channel, host, submit_to)
