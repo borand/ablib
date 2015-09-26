@@ -270,12 +270,12 @@ class InsteonPLM(object):
     debug = 1; # Controls verbosity output
     Interface = None  
 
-    def __init__(self, port='/dev/ttyUSB0'):
+    def __init__(self, port='/dev/insteon_plm'):
         '''        
         '''
         #self.Log       = Logger('InsteonPLM')
         self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
-        self.log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))        
+        self.Log.addHandler(handlers.RedisHandler("log", host='localhost', port=6379))        
         self.channel   = "cmd:insteon"
         self.redis     = redis.Redis()
         self.pubsub    = self.redis.pubsub()        
