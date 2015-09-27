@@ -543,7 +543,7 @@ class InsteonPLM(object):
 #
 def main(test=False):
     plm = InsteonPLM('/dev/insteon_plm')
-    plm.log.level = 50
+    plm.Log.level = 50
 
     try:
         while True:
