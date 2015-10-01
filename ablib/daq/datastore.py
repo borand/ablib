@@ -1,12 +1,17 @@
 import datetime
-
 import simplejson as sjson
 
 from logbook import Logger
+from redislog import handlers, logger
 from requests import get
 from redis import Redis
+from celery import Celery
 
-log = Logger('datastore')
+#log = Logger('datastore')
+log   = logger.RedisLogger('datastore.py')
+log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
+
+app = Celery('daq', broker='redis://localhost', backend='redis://localhost')
 
 def get_last_value(serial_number):
     try:
@@ -33,7 +38,8 @@ def save_last_value(serial_number, timestamp, datavalue):
     datavalue_json = sjson.dumps([timestamp.strftime('%Y-%m-%d-%H:%M:%S'), datavalue])
     R.set('serial_number:'+serial_number, datavalue_json)
 
-def submit(data_set, timestamp='', submit_to='0.0.0.0', port=8000, threshold=0, max_interval=3600):
+@app.task
+def submit(data_set, timestamp='', submit_to='0.0.0.0', port=8000):
 
     if isinstance(timestamp, str):
         if timestamp.lower() == 'now':
@@ -47,36 +53,39 @@ def submit(data_set, timestamp='', submit_to='0.0.0.0', port=8000, threshold=0, 
     try:
         ret = []
         for data in data_set:
+            log.debug('now processing: {0}'.format(data))
             serial_number = data[0]
             datavalue     = data[-1]
-            
-            if isinstance(datavalue, str):
-                url = 'http://%s:%d/sensordata/api/submit/datavalue/%s/sn/%s/val/%s' \
-                    % (submit_to, port, timestamp.strftime('%Y-%m-%d-%H:%M:%S'), serial_number, datavalue)
-            else:
-                last_submitted = get_last_value(serial_number)
-                if last_submitted is not None:                
-                    time_since_last_submission  = timestamp - last_submitted['timestamp']                
+            log.debug('serial_number: {0}, datavalue: {1}'.format(serial_number,datavalue))
+            url = 'http://{0}:{1}/sensordata/api/submit/datavalue/{2}/sn/{3}/val/{4}'.format(submit_to, port, timestamp.strftime('%Y-%m-%d-%H:%M:%S'), serial_number, datavalue)
+
+            # if isinstance(datavalue, str):
+            #     url = 'http://{0}:{1}/sensordata/api/submit/datavalue/{2}/sn/{3}/val/{4}'.format(submit_to, port, timestamp.strftime('%Y-%m-%d-%H:%M:%S'), serial_number, datavalue)
+            # else:
+            #     last_submitted = get_last_value(serial_number)
+            #     if last_submitted is not None:                
+            #         time_since_last_submission  = timestamp - last_submitted['timestamp']                
                     
-                    if time_since_last_submission.seconds < max_interval and abs(datavalue - last_submitted['datavalue']) < threshold:
-                        status_msg = '[SKIPPING], %s value less than %d sec old and below min change threshold %f' \
-                                   % (serial_number, max_interval, threshold)
-                        ret.append(status_msg)
-                        continue
+            #         if time_since_last_submission.seconds < max_interval and abs(datavalue - last_submitted['datavalue']) < threshold:
+            #             status_msg = '[SKIPPING], %s value less than %d sec old and below min change threshold %f' \
+            #                        % (serial_number, max_interval, threshold)
+            #             ret.append(status_msg)
+            #             continue
                 
-                url = 'http://%s:%d/sensordata/api/submit/datavalue/%s/sn/%s/val/%.3f' \
-                    % (submit_to, port, timestamp.strftime('%Y-%m-%d-%H:%M:%S'), serial_number, datavalue)
+            #     url = 'http://%s:%d/sensordata/api/submit/datavalue/%s/sn/%s/val/%.3f' \
+            #         % (submit_to, port, timestamp.strftime('%Y-%m-%d-%H:%M:%S'), serial_number, datavalue)
 
             log.debug('submitting to: %s' % url)
             res = get(url)
             if res.ok:                
                 log.info(res.content)
                 ret.append(res.content)
-                save_last_value(serial_number, timestamp, datavalue)
-                R = Redis()
-                R.publish('datastore:submit:submitted',res.content)
+                #save_last_value(serial_number, timestamp, datavalue)
+                #R = Redis()
+                #R.publish('datastore:submit:submitted',res.content)
             else:
                 log.info(res)
+            log.info("Finished for loop")
 
         return ret
 
