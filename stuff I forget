@@ -13,6 +13,9 @@ ssh-add
 
 
 Psql
-
 Database size 
 # SELECT pg_size_pretty(pg_database_size('geekdb'));
+
+#####################################################
+# Shut down ubuntu desktop
+sudo service lightdm stop

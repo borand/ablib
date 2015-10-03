@@ -28,19 +28,19 @@ from redislog import handlers, logger
 from datastore import submit
 from ablib.util.common import get_host_ip
 
+import time
 ##########################################################################################
 # Define special processing functions for various sensor data
 def process_hydro_power_data(data):    
     power = round(3600.0/((pow(2,16)*float(data[1]) + float(data[2]))/16.0e6*1024.0))    
     print("process_hydro_power_data({} = power = {})".format(data,power))
-    return power
-    if power > 120.0*100.0: # 120V @ 100A 
+    if power < 120.0*100.0: # 120V @ 100A 
         return power
     else:
         return -1
 
 def process_hydro_wh_data(data):
-    #print("process_hydro_wh_data({})".format(data))
+    print("process_hydro_wh_data({})".format(data))
     return data[2]
 
 def process_default(data):
@@ -48,7 +48,7 @@ def process_default(data):
     return data[1]
 
 def process_1wire_thermometer(data):
-    #print("process_default({})".format(data))
+    print("process_default({})".format(data))
     return data[1]
 
 ProcessingFunctions = {'hydro_power' : process_hydro_power_data,\
@@ -62,8 +62,8 @@ class IrqSubmit(object):
         self.redis     = Redis(host=host)
         self.submit_to = submit_to
         self.msg_count = 0
-        self.busy = 0;
-        self.last = []    
+        self.busy      = 0;
+        self.last      = []    
         
         self.channel   = channel
 
@@ -77,10 +77,12 @@ class IrqSubmit(object):
         
         self.pubsub.subscribe(self.channel)
         self.log.info("Initialized IrqSubmit()")
+        self.start()
 
     def __del__(self):        
         self.log.info('__del__()')
-        self.stop()
+        if self.subscribe_thread.is_alive():
+            self.stop()
 
     def start(self):
         """Start reader thread"""
@@ -107,7 +109,7 @@ class IrqSubmit(object):
                 if item['data'] == "KILL":
                     self.pubsub.unsubscribe()
                     self.log.info("unsubscribed and finished")
-                    break
+                    return
                 if item['data'] == "ERROR_TEST":
                     self.redis.publish('error', __name__ + ": ERROR_TEST")
                 else:
@@ -153,6 +155,7 @@ def StartIqrSubmit(channel, host, submit_to):
         I = IrqSubmit(channel=channel, host=host, submit_to=submit_to);
         print("===============================================")
         while True:
+            time.sleep(1)
             pass
     except KeyboardInterrupt:
         pass

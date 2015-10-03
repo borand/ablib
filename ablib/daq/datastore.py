@@ -41,7 +41,7 @@ def save_last_value(serial_number, timestamp, datavalue):
 @app.task
 def submit(data_set, timestamp='', submit_to='0.0.0.0', port=8000):
 
-    if isinstance(timestamp, str):
+    if isinstance(timestamp, str) or isinstance(timestamp, unicode):
         if timestamp.lower() == 'now':
             timestamp = datetime.datetime.now()
         else:
@@ -49,6 +49,8 @@ def submit(data_set, timestamp='', submit_to='0.0.0.0', port=8000):
                 timestamp = datetime.datetime.strptime(timestamp.split('.')[0],"%Y-%m-%d-%H:%M:%S") 
             except:
                 timestamp = datetime.datetime.now()
+    else:
+        log.warning("submit(timestamp) --> type(timestamp)={0}".format(type(timestamp)))
     
     try:
         ret = []
@@ -56,7 +58,7 @@ def submit(data_set, timestamp='', submit_to='0.0.0.0', port=8000):
             log.debug('now processing: {0}'.format(data))
             serial_number = data[0]
             datavalue     = data[-1]
-            log.debug('serial_number: {0}, datavalue: {1}'.format(serial_number,datavalue))
+            #log.debug('serial_number: {0}, datavalue: {1}'.format(serial_number,datavalue))
             url = 'http://{0}:{1}/sensordata/api/submit/datavalue/{2}/sn/{3}/val/{4}'.format(submit_to, port, timestamp.strftime('%Y-%m-%d-%H:%M:%S'), serial_number, datavalue)
 
             # if isinstance(datavalue, str):
@@ -85,7 +87,7 @@ def submit(data_set, timestamp='', submit_to='0.0.0.0', port=8000):
                 #R.publish('datastore:submit:submitted',res.content)
             else:
                 log.info(res)
-            log.info("Finished for loop")
+            #log.info("Finished for loop")
 
         return ret
 
