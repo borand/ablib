@@ -445,6 +445,7 @@ class InsteonPLM(object):
         while self._redis_subscriber_alive:
             try:
                 for item in self.pubsub.listen():
+                    self.Log.debug(item)
                     if item['data'] == "unsubscribe":
                         self.pubsub.unsubscribe()
                         self.Log.info("unsubscribed and finished")
