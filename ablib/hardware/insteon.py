@@ -476,7 +476,9 @@ class InsteonPLM(object):
                                         pass
 
                                 else:
+                                    self.Log.debug(cmd_obj)
                                     res = self.send_sd_cmd(cmd_obj[0], cmd_obj[1], cmd_obj[2])
+                                    self.Log.debug(res)
                                     self.redis.publish(self.channel+"_res", serialize(res))
 
                             except Exception as E:
