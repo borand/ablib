@@ -273,9 +273,9 @@ class InsteonPLM(object):
     def __init__(self, port='/dev/insteon_plm'):
         '''        
         '''
-        #self.Log       = Logger('InsteonPLM')
-        self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
-        self.Log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))        
+        self.Log       = Logger('InsteonPLM')
+        #self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
+        #self.Log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))        
         self.channel   = "cmd:insteon"
         self.redis     = redis.Redis()
         self.pubsub    = self.redis.pubsub()        
@@ -458,6 +458,7 @@ class InsteonPLM(object):
                             try:
                                 cmd_obj = deserialize(cmd)
                                 if isinstance(cmd_obj, dict):
+                                    self.Log.debug(cmd_obj)
                                     cmd_str = cmd_obj['cmd']                                    
                                     if cmd_str == 'GetStatusOfAllDevices':
                                         res = self.GetStatusOfAllDevices()
