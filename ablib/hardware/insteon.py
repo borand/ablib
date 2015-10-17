@@ -482,7 +482,10 @@ class InsteonPLM(object):
 
                                 else:
                                     self.Log.debug(cmd_obj)
-                                    res = self.send_sd_cmd(cmd_obj[0], cmd_obj[1], cmd_obj[2])
+                                    addr        = str2hex(cmd_obj[0])
+                                    insteon_cmd = cmd_obj[1]
+                                    val         = cmd_obj[2]
+                                    res = self.send_sd_cmd(addr, insteon_cmd, val)
                                     self.Log.debug(res)
                                     self.redis.publish(self.channel+"_res", serialize(res))
 
