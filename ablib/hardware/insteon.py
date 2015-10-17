@@ -471,11 +471,14 @@ class InsteonPLM(object):
                                         M.msg = final_data
                                         self.redis.publish("data", M.as_json())
                                     if cmd_str == 'GetLightLevel':
-                                        pass
+                                        addr_str = cmd_obj['addr'] 
+                                        res = self.GetLightLevel(addr_str)
                                     if cmd_str == 'SetSwOn':
-                                        pass
+                                        addr_str = cmd_obj['addr'] 
+                                        res = self.SetSwOn(addr_str)
                                     if cmd_str == 'SetSwOff':
-                                        pass
+                                        addr_str = cmd_obj['addr'] 
+                                        res = self.SetSwOff(addr_str)
 
                                 else:
                                     self.Log.debug(cmd_obj)
