@@ -473,6 +473,10 @@ class InsteonPLM(object):
                                     if cmd_str == 'GetLightLevel':
                                         addr_str = cmd_obj['addr'] 
                                         res = self.GetLightLevel(addr_str)
+                                     if cmd_str == 'SetLightLevel':
+                                        addr_str = cmd_obj['addr'] 
+                                        val = cmd_obj['val'] 
+                                        res = self.SetLightLevel(addr_str, val)
                                     if cmd_str == 'SetSwOn':
                                         addr_str = cmd_obj['addr'] 
                                         res = self.SetSwOn(addr_str)
