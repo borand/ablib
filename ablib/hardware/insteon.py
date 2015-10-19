@@ -473,7 +473,7 @@ class InsteonPLM(object):
                                     if cmd_str == 'GetLightLevel':
                                         addr_str = cmd_obj['addr'] 
                                         res = self.GetLightLevel(addr_str)
-                                     if cmd_str == 'SetLightLevel':
+                                    if cmd_str == 'SetLightLevel':
                                         addr_str = cmd_obj['addr'] 
                                         val = cmd_obj['val'] 
                                         res = self.SetLightLevel(addr_str, val)
@@ -517,12 +517,14 @@ class InsteonPLM(object):
             return False
 
     def GetLightLevel(self, addr):
+        self.Log.debug("GetLightLevel")
         out = self.send_sd_cmd(addr, 25, 0)
         if out is None:
             return -1
         return round(float(out[0])/2.55)
 
     def SetLightLevel(self, addr, level):
+        self.Log.debug("SetLightLevel")
         if level < 0 or level > 100:
             raise ValueError("Light level must be between 0-100%")
         level = int(round(255*float(level)/100.0))
@@ -530,14 +532,17 @@ class InsteonPLM(object):
         return round(float(out[0])/2.55)
 
     def SetSwOff(self, addr):
+        self.Log.debug("SetSwOff")
         out = self.send_sd_cmd(addr, 19, 0)
         return out
 
     def SetSwOn(self, addr):
+        self.Log.debug("SetSwOn")
         out = self.send_sd_cmd(addr, 17, 255)
         return out
 
     def GetStatusOfAllDevices(self, devices=devices):
+        self.Log.debug("GetStatusOfAllDevices")
         data = []
         for k, v in devices.items():
             for i in range(2):
@@ -548,7 +553,8 @@ class InsteonPLM(object):
                     break
 
             data.append([k, stat, v])
-            print v, k, stat
+            
+            
 
         return data
 
