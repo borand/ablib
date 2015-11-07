@@ -11,7 +11,15 @@ from celery import Celery
 log   = logger.RedisLogger('datastore.py')
 log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
 
-app = Celery('daq', broker='redis://localhost', backend='redis://localhost')
+app = Celery('X', broker='redis://localhost/0', backend='redis://localhost')
+app.conf.update(
+    CELERY_TASK_RESULT_EXPIRES=3600,
+    CELERY_TIMEZONE = 'US/Eastern',
+    CELERY_ROUTES = {        
+        'datastore.submit': {'queue': 'submit'},
+    },
+    CELERY_ENABLE_UTC=False,
+)
 
 def get_last_value(serial_number):
     try:
@@ -95,6 +103,18 @@ def submit(data_set, timestamp='', submit_to='0.0.0.0', port=8000):
         log.error("Exception occured, within the submit function: %s" % E.message)
         log.error('q_data = %s' % str(data_set[0]))
         return E.message
+
+@app.task
+def test():
+    print("I am @app.task")
+    log.debug('I am @app.task')
+    return True
+
+@app.task
+def testB():
+    print("I am @app.taskB")
+    log.debug('I am @app.taskB')
+    return True
 
 if __name__ == "__main__":
     submit([['0', 0.0]])
