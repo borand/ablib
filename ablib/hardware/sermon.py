@@ -70,7 +70,7 @@ class ComPort(object):
         self.redis_send_key = self.signature+'-send'
         self.redis_read_key = self.signature+'-read'
         self.redis = redis.Redis(host=host)        
-        self.log   = logger.RedisLogger('sermon.py:ComPort')
+        self.log   = logger.RedisLogger('sermon.py:{}'.format(self.signature))
         self.log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
         self.log.level = 1
 
@@ -132,7 +132,7 @@ class ComPort(object):
     def cmd_via_redis_subscriber(self):
         self.log.debug('cmd_via_redis_subscriber()')
         self.pubsub    = self.redis.pubsub()
-        self.pubsub.subscribe("cmd")
+        self.pubsub.subscribe(self.signature)
         
         while self._redis_subscriber_alive:
             try:

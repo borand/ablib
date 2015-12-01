@@ -11,7 +11,7 @@ from celery import Celery
 log   = logger.RedisLogger('datastore.py')
 log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
 
-app = Celery('X', broker='redis://localhost/0', backend='redis://localhost')
+app = Celery('datastore', broker='redis://localhost/0', backend='redis://localhost')
 app.conf.update(
     CELERY_TASK_RESULT_EXPIRES=3600,
     CELERY_TIMEZONE = 'US/Eastern',

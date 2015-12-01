@@ -29,6 +29,8 @@ from ablib.util.common import get_host_ip
 #from logbook import Logger
 from redislog import handlers, logger
 #from redislog import handlers, logger
+dbglog       = logger.RedisLogger('insteon.py:dbg')
+dbglog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))  
 
 from anyjson import serialize, deserialize
 
@@ -254,6 +256,7 @@ x10_code_dict = {
 #
 
 def dbg(obj, level, msg):
+    dbglog.info(msg)
     if obj.debug >= level:
         print obj.__unicode__()+ ": " + "  "*level + msg
     else:
@@ -273,9 +276,9 @@ class InsteonPLM(object):
     def __init__(self, port='/dev/insteon_plm'):
         '''        
         '''
-        self.Log       = Logger('InsteonPLM')
-        #self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
-        #self.Log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))        
+        #self.Log       = Logger('InsteonPLM')
+        self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
+        self.Log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))        
         self.channel   = "cmd:insteon"
         self.redis     = redis.Redis()
         self.pubsub    = self.redis.pubsub()        
