@@ -288,11 +288,10 @@ class InsteonPLM(object):
         try:        
             self.uart = serial.Serial(port=port, baudrate=19200, timeout=3)
             self.uart.timeout = 1            
+            self.Log.debug('__init__(port={0}, channel={1})'.format(port, self.channel))
         except:
             self.uart = None
-            print("Error occured while oppening serial Interface")        
-        
-        self.Log.debug('__init__(port={0}, channel={1})'.format(port, self.channel))
+            self.Log.error("Error occured while oppening serial Interface") 
         self._start_listner()
 
     def __del__(self):
@@ -316,16 +315,16 @@ class InsteonPLM(object):
         if not(self.uart.isOpen()):            
             try:
                 self.uart.open()
-                dbg(self, 2, "Port %s is now open" % str(self.uart.port))
+                self.Log.debug("Port {} is now open".format(str(self.uart.port)))
                 return PORT_OPEN
             except uartial.uartialException:
-                dbg(self, 0, "uartialException Cannot open port: %s " % str(self.uart.port))
+                self.Log.error("uart Exception Cannot open port: {} ".format(str(self.uart.port)))
                 return PORT_ERROR
             except:
-                dbg(self, 0, "OtherException Cannot open port: %s" % str(self.uart.port))
+                self.Log.error("OtherException Cannot open port: {}".format(str(self.uart.port)))
                 return PORT_ERROR
         else:
-            dbg(self, 2, "Port %s is already open" % str(self.uart.port))
+            self.Log.debug("Port {} is already open".format(str(self.uart.port)))
             return PORT_OPEN
         
     def read(self):
@@ -333,9 +332,9 @@ class InsteonPLM(object):
         if self.uart is not None:
             data = self.uart.read(self.uart.inWaiting())
             dbg_msg = "read: %s" % str(data)
-            dbg(self, 3, dbg_msg)
+            self.Log.debug(dbg_msg)
         else:
-            dbg(self, 3, "No uartial connection")
+            self.Log.debug("No uartial connection")
             data = ''
         return data
 
@@ -361,11 +360,11 @@ class InsteonPLM(object):
         if self.is_open():
             out = self.uart.write(cmd)
         else:
-            print "Serial port is not open"
+            self.Log.debug("Serial port is not open")
             out = 0
         
         if out != cmd_length:
-            print "Warning serial port sent {0} bytes while {1} were expected".format(out, cmd_length)
+            self.Log.debug("Warning serial port sent {0} bytes while {1} were expected".format(out, cmd_length))
             
         return out
 
@@ -374,7 +373,7 @@ class InsteonPLM(object):
         leftover_buffer = self.read()
         
         if not cmd_dict.has_key(cmd[1]):
-            print "Command not found"
+            self.Log.debug("Command not found")
             return [None, leftover_buffer]
             
         cmd_details = cmd_dict.get(cmd[1])
@@ -406,10 +405,11 @@ class InsteonPLM(object):
             return_data = data
         else:
             dbg_msg = "did not recive expected number of bytes within the time out period"
+
             response += self.read()
             data = [ord(x) for x in response]
             return_data = data
-            
+        self.Log.debug(dbg_msg)  
         return [return_data, leftover_buffer]
 
     def send_sd_cmd(self, *args):
@@ -498,13 +498,13 @@ class InsteonPLM(object):
 
                             except Exception as E:
                                 error_msg = {'source' : 'serinsteon:cmd_via_redis_subscriber', 'function' : 'def run(self):', 'error' : E.message}
-                                self.redis.publish('error',serialize(error_msg))
+                                self.Log.error(error_msg)
 
                         else:
                             self.Log.debug(cmd)
             except Exception as E:
                 error_msg = {'source' : 'InsteonSub', 'function' : 'def run(self):', 'error' : E.message}
-                self.redis.publish('error',serialize(error_msg))
+                self.Log.error(error_msg)
         self.Log.debug('end of cmd_via_redis_subscriber()')
 
 ###########################################################################################################
@@ -535,12 +535,12 @@ class InsteonPLM(object):
         return round(float(out[0])/2.55)
 
     def SetSwOff(self, addr):
-        self.Log.debug("SetSwOff")
+        self.Log.debug("SetSwOff({})".format(addr))
         out = self.send_sd_cmd(addr, 19, 0)
         return out
 
     def SetSwOn(self, addr):
-        self.Log.debug("SetSwOn")
+        self.Log.debug("SetSwOn({})".format(addr))
         out = self.send_sd_cmd(addr, 17, 255)
         return out
 
