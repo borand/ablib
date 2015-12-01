@@ -328,7 +328,6 @@ class InsteonPLM(object):
             return PORT_OPEN
         
     def read(self):
-        dbg(self, 2, "def read(self):")
         if self.uart is not None:
             data = self.uart.read(self.uart.inWaiting())
             dbg_msg = "read: %s" % str(data)
@@ -336,9 +335,11 @@ class InsteonPLM(object):
         else:
             self.Log.debug("No uartial connection")
             data = ''
+        self.Log.debug("read(): = {}".format(str(data)))
         return data
 
     def send(self, cmd):
+        self.Log.debug("self(cmd={}):".format(str(cmd)))
         if not isinstance(cmd, list):
             raise TypeError("cmd must be a list" )
         
@@ -566,7 +567,6 @@ class InsteonPLM(object):
 #
 def main(test=False):
     plm = InsteonPLM('/dev/insteon_plm')
-    plm.Log.level = 50
 
     try:
         while True:
