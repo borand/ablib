@@ -274,7 +274,10 @@ class ComPort(object):
                 
                 if bytes_in_waiting:
                     new_data = self.serial.read(bytes_in_waiting)
-                    self.buffer = self.buffer + new_data                    
+                    self.buffer = self.buffer + new_data
+                else:
+                    sleep(0.1)
+
 
                 crlf_index = self.buffer.find('\r\n')
 
@@ -323,6 +326,7 @@ class ComPort(object):
 def main(**kwargs):
     try:
         while True:
+            sleep(0.1)
             pass
     except KeyboardInterrupt:
         pass    
@@ -344,7 +348,6 @@ if __name__ == '__main__':
     run_local  = arguments.get('--local',False)
 
     C = ComPort(dev, host=redis_host)
-    C.log.level = 10
 
     if run_local:
         redis_host = 'localhost'
