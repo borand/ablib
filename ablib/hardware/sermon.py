@@ -22,6 +22,7 @@ import re
 import simplejson as sjson
 import logbook
 import redis
+from time import sleep
 
 import threading
 from datetime import datetime
@@ -130,7 +131,7 @@ class ComPort(object):
         self.redis_subscriber_thread.start()
 
     def cmd_via_redis_subscriber(self):
-        self.log.debug('cmd_via_redis_subscriber()')
+        self.log.debug('cmd_via_redis_subscriber(channel={})'.format(self.signature))
         self.pubsub    = self.redis.pubsub()
         self.pubsub.subscribe(self.signature)
         
@@ -149,8 +150,8 @@ class ComPort(object):
                         else:
                             self.log.debug(cmd)
             except Exception as E:
-                error_msg = {'source' : 'RedisSub', 'function' : 'def run(self):', 'error' : E.message}
-                self.redis.publish('error',sjson.dumps(error_msg))
+                error_msg =  'error: {}'.format(E.message)
+                self.log.error(error_msg)
         
         self.pubsub.unsubscribe()      
         self.log.debug('end of cmd_via_redis_subscriber()')
@@ -366,6 +367,7 @@ if __name__ == '__main__':
     if run_main:
         try:
             while True:
+                sleep(0.1)
                 pass
         except KeyboardInterrupt:
             pass

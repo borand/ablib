@@ -339,7 +339,7 @@ class InsteonPLM(object):
         return data
 
     def send(self, cmd):
-        self.Log.debug("self(cmd={}):".format(str(cmd)))
+        self.Log.debug("send(cmd={}):".format(str(cmd)))
         if not isinstance(cmd, list):
             raise TypeError("cmd must be a list" )
         
