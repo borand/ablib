@@ -297,16 +297,16 @@ class ComPort(object):
                             final_data.update({'cmd_number' : -1})
                             error_msg = {'timestamp' : timestamp, 'from': self.signature, 'source' : 'ComPort', 'function' : 'def run() - inner', 'error' : E.message}
                             Msg.msg = error_msg
-                            self.redis.publish('error',error_msg)
                             self.log.error(Msg.msg)
 
                         Msg.msg = final_data
+                        self.log.debug("final_data={}".format(final_data))
                         self.redis.publish(self.redis_pub_channel, Msg.as_jsno())
-                        self.log.debug('.....publish to :' + self.redis_pub_channel)
+                        #self.log.debug('.....publish to :' + self.redis_pub_channel)
                         self.redis.set(self.redis_read_key,Msg.as_jsno())
 
                         self.buffer = self.buffer[crlf_index+2:]
-                        self.log.debug('.....empty buffer')
+                        #self.log.debug('.....empty buffer')
                     else:
                         self.buffer = ''
                         self.send('Z')
@@ -314,7 +314,6 @@ class ComPort(object):
 
         except Exception as E:
             error_msg = {'source' : 'ComPort', 'function' : 'def run() - outter', 'error' : E.message}
-            self.redis.publish('error',sjson.dumps(error_msg))
             self.log.error("Exception occured, within the run function: %s" % E.message)
         
         self.log.debug('Exiting run() function')
@@ -332,16 +331,12 @@ if __name__ == '__main__':
     arguments = docopt(__doc__, version='Naval Fate 2.0')    
     mainlog   = logger.RedisLogger('sermon.py:main')
     mainlog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
-    mainlog.level = 10
 
-    mainlog.info("===============================================")
+    mainlog.info("========= __main__ ============")
     mainlog.info(arguments)
 
     dev = arguments['--dev']
-
-    mainlog.info("===============================================")
     mainlog.info(dev)
-
 
     test_json  = arguments['test']
     run_main   = arguments['run']
