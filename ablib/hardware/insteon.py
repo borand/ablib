@@ -570,6 +570,7 @@ def main(test=False):
 
     try:
         while True:
+            sleep(0.5)
             pass
     except KeyboardInterrupt:
         pass
