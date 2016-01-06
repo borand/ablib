@@ -22,6 +22,7 @@ import re
 import simplejson as sjson
 import logbook
 import redis
+from time import sleep
 
 import threading
 from datetime import datetime
@@ -70,7 +71,7 @@ class ComPort(object):
         self.redis_send_key = self.signature+'-send'
         self.redis_read_key = self.signature+'-read'
         self.redis = redis.Redis(host=host)        
-        self.log   = logger.RedisLogger('sermon.py:ComPort')
+        self.log   = logger.RedisLogger('sermon.py:{}'.format(self.signature))
         self.log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
         self.log.level = 1
 
@@ -130,9 +131,9 @@ class ComPort(object):
         self.redis_subscriber_thread.start()
 
     def cmd_via_redis_subscriber(self):
-        self.log.debug('cmd_via_redis_subscriber()')
+        self.log.debug('cmd_via_redis_subscriber(channel={})'.format(self.signature))
         self.pubsub    = self.redis.pubsub()
-        self.pubsub.subscribe("cmd")
+        self.pubsub.subscribe(self.signature)
         
         while self._redis_subscriber_alive:
             try:
@@ -149,8 +150,8 @@ class ComPort(object):
                         else:
                             self.log.debug(cmd)
             except Exception as E:
-                error_msg = {'source' : 'RedisSub', 'function' : 'def run(self):', 'error' : E.message}
-                self.redis.publish('error',sjson.dumps(error_msg))
+                error_msg =  'error: {}'.format(E.message)
+                self.log.error(error_msg)
         
         self.pubsub.unsubscribe()      
         self.log.debug('end of cmd_via_redis_subscriber()')
@@ -273,7 +274,10 @@ class ComPort(object):
                 
                 if bytes_in_waiting:
                     new_data = self.serial.read(bytes_in_waiting)
-                    self.buffer = self.buffer + new_data                    
+                    self.buffer = self.buffer + new_data
+                else:
+                    sleep(0.1)
+
 
                 crlf_index = self.buffer.find('\r\n')
 
@@ -296,16 +300,16 @@ class ComPort(object):
                             final_data.update({'cmd_number' : -1})
                             error_msg = {'timestamp' : timestamp, 'from': self.signature, 'source' : 'ComPort', 'function' : 'def run() - inner', 'error' : E.message}
                             Msg.msg = error_msg
-                            self.redis.publish('error',error_msg)
                             self.log.error(Msg.msg)
 
                         Msg.msg = final_data
+                        self.log.debug("final_data={}".format(final_data))
                         self.redis.publish(self.redis_pub_channel, Msg.as_jsno())
-                        self.log.debug('.....publish to :' + self.redis_pub_channel)
+                        #self.log.debug('.....publish to :' + self.redis_pub_channel)
                         self.redis.set(self.redis_read_key,Msg.as_jsno())
 
                         self.buffer = self.buffer[crlf_index+2:]
-                        self.log.debug('.....empty buffer')
+                        #self.log.debug('.....empty buffer')
                     else:
                         self.buffer = ''
                         self.send('Z')
@@ -313,7 +317,6 @@ class ComPort(object):
 
         except Exception as E:
             error_msg = {'source' : 'ComPort', 'function' : 'def run() - outter', 'error' : E.message}
-            self.redis.publish('error',sjson.dumps(error_msg))
             self.log.error("Exception occured, within the run function: %s" % E.message)
         
         self.log.debug('Exiting run() function')
@@ -323,6 +326,7 @@ class ComPort(object):
 def main(**kwargs):
     try:
         while True:
+            sleep(0.1)
             pass
     except KeyboardInterrupt:
         pass    
@@ -331,16 +335,12 @@ if __name__ == '__main__':
     arguments = docopt(__doc__, version='Naval Fate 2.0')    
     mainlog   = logger.RedisLogger('sermon.py:main')
     mainlog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
-    mainlog.level = 10
 
-    mainlog.info("===============================================")
+    mainlog.info("========= __main__ ============")
     mainlog.info(arguments)
 
     dev = arguments['--dev']
-
-    mainlog.info("===============================================")
     mainlog.info(dev)
-
 
     test_json  = arguments['test']
     run_main   = arguments['run']
@@ -348,7 +348,6 @@ if __name__ == '__main__':
     run_local  = arguments.get('--local',False)
 
     C = ComPort(dev, host=redis_host)
-    C.log.level = 10
 
     if run_local:
         redis_host = 'localhost'
@@ -366,6 +365,7 @@ if __name__ == '__main__':
     if run_main:
         try:
             while True:
+                sleep(0.1)
                 pass
         except KeyboardInterrupt:
             pass

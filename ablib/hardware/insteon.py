@@ -29,6 +29,8 @@ from ablib.util.common import get_host_ip
 #from logbook import Logger
 from redislog import handlers, logger
 #from redislog import handlers, logger
+dbglog       = logger.RedisLogger('insteon.py:dbg')
+dbglog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))  
 
 from anyjson import serialize, deserialize
 
@@ -254,6 +256,7 @@ x10_code_dict = {
 #
 
 def dbg(obj, level, msg):
+    dbglog.info(msg)
     if obj.debug >= level:
         print obj.__unicode__()+ ": " + "  "*level + msg
     else:
@@ -273,6 +276,7 @@ class InsteonPLM(object):
     def __init__(self, port='/dev/insteon_plm'):
         '''        
         '''
+
         # self.Log       = Logger('InsteonPLM')
         self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
         self.Log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
@@ -285,11 +289,10 @@ class InsteonPLM(object):
         try:        
             self.uart = serial.Serial(port=port, baudrate=19200, timeout=3)
             self.uart.timeout = 1            
+            self.Log.debug('__init__(port={0}, channel={1})'.format(port, self.channel))
         except:
             self.uart = None
-            print("Error occured while oppening serial Interface")        
-        
-        self.Log.debug('__init__(port={0}, channel={1})'.format(port, self.channel))
+            self.Log.error("Error occured while oppening serial Interface") 
         self._start_listner()
 
     def __del__(self):
@@ -313,30 +316,31 @@ class InsteonPLM(object):
         if not(self.uart.isOpen()):            
             try:
                 self.uart.open()
-                dbg(self, 2, "Port %s is now open" % str(self.uart.port))
+                self.Log.debug("Port {} is now open".format(str(self.uart.port)))
                 return PORT_OPEN
             except uartial.uartialException:
-                dbg(self, 0, "uartialException Cannot open port: %s " % str(self.uart.port))
+                self.Log.error("uart Exception Cannot open port: {} ".format(str(self.uart.port)))
                 return PORT_ERROR
             except:
-                dbg(self, 0, "OtherException Cannot open port: %s" % str(self.uart.port))
+                self.Log.error("OtherException Cannot open port: {}".format(str(self.uart.port)))
                 return PORT_ERROR
         else:
-            dbg(self, 2, "Port %s is already open" % str(self.uart.port))
+            self.Log.debug("Port {} is already open".format(str(self.uart.port)))
             return PORT_OPEN
         
     def read(self):
-        dbg(self, 2, "def read(self):")
         if self.uart is not None:
             data = self.uart.read(self.uart.inWaiting())
             dbg_msg = "read: %s" % str(data)
-            dbg(self, 3, dbg_msg)
+            self.Log.debug(dbg_msg)
         else:
-            dbg(self, 3, "No uartial connection")
+            self.Log.debug("No uartial connection")
             data = ''
+        self.Log.debug("read(): = {}".format(str(data)))
         return data
 
     def send(self, cmd):
+        self.Log.debug("send(cmd={}):".format(str(cmd)))
         if not isinstance(cmd, list):
             raise TypeError("cmd must be a list" )
         
@@ -358,11 +362,11 @@ class InsteonPLM(object):
         if self.is_open():
             out = self.uart.write(cmd)
         else:
-            print "Serial port is not open"
+            self.Log.debug("Serial port is not open")
             out = 0
         
         if out != cmd_length:
-            print "Warning serial port sent {0} bytes while {1} were expected".format(out, cmd_length)
+            self.Log.debug("Warning serial port sent {0} bytes while {1} were expected".format(out, cmd_length))
             
         return out
 
@@ -371,7 +375,7 @@ class InsteonPLM(object):
         leftover_buffer = self.read()
         
         if not cmd_dict.has_key(cmd[1]):
-            print "Command not found"
+            self.Log.debug("Command not found")
             return [None, leftover_buffer]
             
         cmd_details = cmd_dict.get(cmd[1])
@@ -403,10 +407,11 @@ class InsteonPLM(object):
             return_data = data
         else:
             dbg_msg = "did not recive expected number of bytes within the time out period"
+
             response += self.read()
             data = [ord(x) for x in response]
             return_data = data
-            
+        self.Log.debug(dbg_msg)  
         return [return_data, leftover_buffer]
 
     def send_sd_cmd(self, *args):
@@ -473,6 +478,10 @@ class InsteonPLM(object):
                                     if cmd_str == 'GetLightLevel':
                                         addr_str = cmd_obj['addr'] 
                                         res = self.GetLightLevel(addr_str)
+                                    if cmd_str == 'SetLightLevel':
+                                        addr_str = cmd_obj['addr'] 
+                                        val = cmd_obj['val'] 
+                                        res = self.SetLightLevel(addr_str, val)
                                     if cmd_str == 'SetSwOn':
                                         addr_str = cmd_obj['addr'] 
                                         res = self.SetSwOn(addr_str)
@@ -491,13 +500,13 @@ class InsteonPLM(object):
 
                             except Exception as E:
                                 error_msg = {'source' : 'serinsteon:cmd_via_redis_subscriber', 'function' : 'def run(self):', 'error' : E.message}
-                                self.redis.publish('error',serialize(error_msg))
+                                self.Log.error(error_msg)
 
                         else:
                             self.Log.debug(cmd)
             except Exception as E:
                 error_msg = {'source' : 'InsteonSub', 'function' : 'def run(self):', 'error' : E.message}
-                self.redis.publish('error',serialize(error_msg))
+                self.Log.error(error_msg)
         self.Log.debug('end of cmd_via_redis_subscriber()')
 
 ###########################################################################################################
@@ -513,12 +522,14 @@ class InsteonPLM(object):
             return False
 
     def GetLightLevel(self, addr):
+        self.Log.debug("GetLightLevel")
         out = self.send_sd_cmd(addr, 25, 0)
         if out is None:
             return -1
         return round(float(out[0])/2.55)
 
     def SetLightLevel(self, addr, level):
+        self.Log.debug("SetLightLevel")
         if level < 0 or level > 100:
             raise ValueError("Light level must be between 0-100%")
         level = int(round(255*float(level)/100.0))
@@ -526,14 +537,17 @@ class InsteonPLM(object):
         return round(float(out[0])/2.55)
 
     def SetSwOff(self, addr):
+        self.Log.debug("SetSwOff({})".format(addr))
         out = self.send_sd_cmd(addr, 19, 0)
         return out
 
     def SetSwOn(self, addr):
+        self.Log.debug("SetSwOn({})".format(addr))
         out = self.send_sd_cmd(addr, 17, 255)
         return out
 
     def GetStatusOfAllDevices(self, devices=devices):
+        self.Log.debug("GetStatusOfAllDevices")
         data = []
         for k, v in devices.items():
             for i in range(2):
@@ -544,7 +558,8 @@ class InsteonPLM(object):
                     break
 
             data.append([k, stat, v])
-            print v, k, stat
+            
+            
 
         return data
 
@@ -553,10 +568,10 @@ class InsteonPLM(object):
 #
 def main(test=False):
     plm = InsteonPLM('/dev/insteon_plm')
-    plm.Log.level = 50
 
     try:
         while True:
+            sleep(0.5)
             pass
     except KeyboardInterrupt:
         pass

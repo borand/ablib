@@ -18,4 +18,5 @@ Database size
 
 #####################################################
 # Shut down ubuntu desktop
+Press CTRL + ALT + F1 to move to TTY1 (text console).
 sudo service lightdm stop
