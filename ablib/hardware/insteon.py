@@ -143,7 +143,7 @@ def parse_x10_cmd(cmd):
 
 def parse(buf, process=True):
     parsed   = []
-    unparsed = [];
+    unparsed = []
     buf.reverse()
     while len(buf) > 0:
         x = buf.pop()
@@ -273,9 +273,9 @@ class InsteonPLM(object):
     def __init__(self, port='/dev/insteon_plm'):
         '''        
         '''
-        self.Log       = Logger('InsteonPLM')
-        #self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
-        #self.Log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))        
+        # self.Log       = Logger('InsteonPLM')
+        self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
+        self.Log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
         self.channel   = "cmd:insteon"
         self.redis     = redis.Redis()
         self.pubsub    = self.redis.pubsub()        
