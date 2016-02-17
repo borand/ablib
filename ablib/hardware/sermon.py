@@ -4,6 +4,7 @@ Simple module for communicating with ComPort firmware written for AVR328p.
 
 Usage:
   hardware.py test [--dev=DEV ] [--test] [--submit_to=SUBMIT_TO] [--redishost=REDISHOST]
+  hardware.py 1wire [--dev=DEV ] [--test] [--submit_to=SUBMIT_TO] [--redishost=REDISHOST]
   hardware.py run [--dev=DEV] [--local] [--submit_to=SUBMIT_TO] [--redishost=REDISHOST]
   hardware.py (-h | --help)
 
@@ -22,6 +23,7 @@ import re
 import simplejson as sjson
 import logbook
 import redis
+import sys
 from time import sleep
 
 import threading
@@ -65,17 +67,22 @@ class ComPort(object):
                  run=True):
         
         self.buffer  = ''
+        self.last_read_line = ''
         self.serial    = serial.Serial(port, baudrate, bytesize, parity, stopbits, packet_timeout, xonxoff, rtscts, writeTimeout, dsrdtr)
         self.signature = "{0:s}:{1:s}".format(get_host_ip(), self.serial.port)
         
         self.redis_send_key = self.signature+'-send'
         self.redis_read_key = self.signature+'-read'
-        self.redis = redis.Redis(host=host)        
-        self.log   = logger.RedisLogger('sermon.py:{}'.format(self.signature))
-        self.log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
+        self.redis = redis.Redis(host=host)
+        
+        logger_name = 'sermon.py:{}'.format(self.signature)
+        if sys.stdout.isatty():        
+            self.log   = Logger(logger_name)
+        else:            
+            self.log   = logger.RedisLogger(logger_name)
+            self.log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
+
         self.log.level = 1
-
-
         self.alive = False
         self._reader_alive = False
 
@@ -88,8 +95,7 @@ class ComPort(object):
             pass
         
         if run:
-            self._start_reader()
-            self._start_listner()
+            self.run()
 
     def __del__(self):
         self.log.debug("About to delete the object")
@@ -108,6 +114,11 @@ class ComPort(object):
             self.redis.srem('ComPort',self.signature)
     
     # Thread control
+    def run(self):
+        self.log.debug('run()')
+        self._start_reader()
+        self._start_listner()
+
     def _start_reader(self):
         """Start reader thread"""
         self.log.debug("Start serial port reader thread")
@@ -213,8 +224,12 @@ class ComPort(object):
         done = False
         to = time.clock()
         while time.clock() - to < TIMEOUT and not done:
-            serial_data = self.redis.get(self.redis_read_key)
-            done = waitfor in self.buffer and isinstance(serial_data,str)
+            if self.alive and self._reader_alive:
+                serial_data = self.redis.get(self.redis_read_key)
+                done = waitfor in self.buffer and isinstance(serial_data,str)
+            else:
+                self.read_serial_data()
+                done = waitfor in self.buffer and isinstance(serial_data,str)
 
         if not done:
             self.log.debug("read() did not find waitfor {:s} in self.buffer".format(waitfor))
@@ -311,15 +326,64 @@ class ComPort(object):
                         self.buffer = self.buffer[crlf_index+2:]
                         #self.log.debug('.....empty buffer')
                     else:
-                        self.buffer = ''
-                        self.send('Z')
-                        self.log.debug('.....reseting command number')
+                        #self.buffer = ''
+                        #self.send('Z')
+                        #self.log.debug('.....reseting command number')
+                        pass
 
         except Exception as E:
             error_msg = {'source' : 'ComPort', 'function' : 'def run() - outter', 'error' : E.message}
             self.log.error("Exception occured, within the run function: %s" % E.message)
         
         self.log.debug('Exiting run() function')
+
+    def read_serial_data(self):
+
+        Msg = Message(self.signature)
+        bytes_in_waiting = self.serial.inWaiting()                
+        if bytes_in_waiting:
+            new_data = self.serial.read(bytes_in_waiting)
+            self.buffer = self.buffer + new_data
+        else:
+            sleep(0.1)
+
+        crlf_index = self.buffer.find('\r\n')
+
+        if crlf_index > -1:
+            self.last_read_line = self.buffer[0:crlf_index]            
+            temp = self.re_data.findall(self.last_read_line)
+            self.log.debug('read self.last_read_line: ' + self.last_read_line)
+
+            if len(temp):
+                final_data = dict()
+                timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+                final_data['timestamp'] = timestamp
+                final_data['raw']       = self.last_read_line
+                try:
+                    final_data.update({'cmd_number' : sjson.loads(temp[0][0])})
+                    final_data.update(sjson.loads(temp[0][1]))
+                    self.log.debug('.....updated final_data')
+
+                except Exception as E:
+                    final_data.update({'cmd_number' : -1})
+                    error_msg = {'timestamp' : timestamp, 'from': self.signature, 'source' : 'ComPort', 'function' : 'def run() - inner', 'error' : E.message}
+                    Msg.msg = error_msg
+                    self.log.error(Msg.msg)
+
+                Msg.msg = final_data
+                self.log.debug("final_data={}".format(final_data))
+                self.redis.publish(self.redis_pub_channel, Msg.as_jsno())
+                #self.log.debug('.....publish to :' + self.redis_pub_channel)
+                self.redis.set(self.redis_read_key,Msg.as_jsno())                
+                #self.log.debug('.....empty buffer')
+                self.buffer = self.buffer[crlf_index+2:]
+            else:
+                self.buffer = ''
+                self.send('Z')
+                self.log.debug('.....reseting command number')
+                pass
+            
+
 
 ############################################################################################
 
@@ -333,8 +397,12 @@ def main(**kwargs):
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Naval Fate 2.0')    
-    mainlog   = logger.RedisLogger('sermon.py:main')
-    mainlog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
+    if sys.stdout.isatty():
+        mainlog   = Logger('sermon.py:main')
+    else:
+        mainlog   = logger.RedisLogger('sermon.py:main')
+        mainlog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
+        
 
     mainlog.info("========= __main__ ============")
     mainlog.info(arguments)
@@ -344,10 +412,9 @@ if __name__ == '__main__':
 
     test_json  = arguments['test']
     run_main   = arguments['run']
+    one_wire   = arguments['1wire']
     redis_host = arguments.get('--redishost',get_host_ip())
     run_local  = arguments.get('--local',False)
-
-    C = ComPort(dev, host=redis_host)
 
     if run_local:
         redis_host = 'localhost'
@@ -363,12 +430,28 @@ if __name__ == '__main__':
                 mainlog.info(E)
     
     if run_main:
+        C = ComPort(dev, host=redis_host)
         try:
             while True:
                 sleep(0.1)
                 pass
         except KeyboardInterrupt:
             pass
+    
+    if one_wire:
+        C = ComPort(dev, host=redis_host,run=False)
+
+        C.send('json 1')
+        C.send('interval 1000')
+        C.send('stream 1')
+        C.run()
+        try:
+            while True:
+                sleep(0.1)
+                pass
+        except KeyboardInterrupt:
+            pass
+
     C.close()
 
     mainlog.info("All done")

@@ -1,3 +1,2 @@
-import comport
-import digitemp
+import sermon
 import insteon

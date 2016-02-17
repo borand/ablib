@@ -1,15 +1,14 @@
-"""i.py - 
+"""insteon.py - 
 
 Simple module for communicating with insteon serial plm.
 
-Usage:
-  hardware.py test
-  hardware.py run
-  hardware.py rule
-  hardware.py (-h | --help)
+Usage:  
+  insteon.py run [--redislog=REDISLOG] 
+  insteon.py (-h | --help)
 
 Options:
-  -h, --help
+  --redislog=REDISLOG              [default: True]
+
 """
 
 import time
@@ -18,6 +17,7 @@ import serial
 import os
 import redis
 import threading
+import sys
 from datetime import datetime
 from time import sleep
 from docopt import docopt
@@ -26,11 +26,12 @@ from ablib.util.message import Message
 from threading import Thread,Event
 from ablib.util.common import get_host_ip
 
-#from logbook import Logger
-from redislog import handlers, logger
+from logbook import Logger, StreamHandler
+StreamHandler(sys.stdout).push_application()
 #from redislog import handlers, logger
-dbglog       = logger.RedisLogger('insteon.py:dbg')
-dbglog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))  
+#from redislog import handlers, logger
+#dbglog       = logger.RedisLogger('insteon.py:dbg')
+#dbglog.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))  
 
 from anyjson import serialize, deserialize
 
@@ -179,7 +180,7 @@ devices = {
 '14.a1.28' : 'outdoor',
 '20.1f.11' : 'light',
 '1D.AD.86' : 'bedroom',
-# '1B.7A.50' : 'unused_se',
+'1B.7A.50' : 'sunroom',
 }
 
 device_by_location = {v: k for k, v in devices.items()}
@@ -273,13 +274,15 @@ class InsteonPLM(object):
     debug = 1; # Controls verbosity output
     Interface = None  
 
-    def __init__(self, port='/dev/insteon_plm'):
+    def __init__(self, port='/dev/insteon_plm', redislog=False):
         '''        
         '''
-
-        # self.Log       = Logger('InsteonPLM')
-        self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
-        self.Log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
+        if redislog:
+            self.Log       = logger.RedisLogger('insteon.py:InsteonPLM')
+            self.Log.addHandler(handlers.RedisHandler.to("log", host='localhost', port=6379))
+        else:
+            self.Log       = Logger('InsteonPLM')
+        
         self.channel   = "cmd:insteon"
         self.redis     = redis.Redis()
         self.pubsub    = self.redis.pubsub()        
@@ -330,13 +333,11 @@ class InsteonPLM(object):
         
     def read(self):
         if self.uart is not None:
-            data = self.uart.read(self.uart.inWaiting())
-            dbg_msg = "read: %s" % str(data)
-            self.Log.debug(dbg_msg)
+            data = self.uart.read(self.uart.inWaiting())           
+            self.Log.debug("read(): = {}".format(str(data)))
         else:
             self.Log.debug("No uartial connection")
             data = ''
-        self.Log.debug("read(): = {}".format(str(data)))
         return data
 
     def send(self, cmd):
@@ -443,6 +444,7 @@ class InsteonPLM(object):
         else:
             self.Log.debug("thread still alive after 3 delay")
 
+    # publish cmd:insteon "{\"cmd\": \"SetSwOff\", \"addr\" : \"20.1f.11\"}"
     def cmd_via_redis_subscriber(self):
         self.Log.debug('cmd_via_redis_subscriber()')        
         self.pubsub.subscribe(self.channel)
@@ -458,7 +460,7 @@ class InsteonPLM(object):
                     else:
                         cmd = item['data']
                         if isinstance(cmd,str):
-                            self.Log.debug(cmd)
+                            self.Log.debug("cmd_via_redis_subscriber() cmd = {}".format(cmd))
                             
                             try:
                                 cmd_obj = deserialize(cmd)
@@ -489,8 +491,7 @@ class InsteonPLM(object):
                                         addr_str = cmd_obj['addr'] 
                                         res = self.SetSwOff(addr_str)
 
-                                else:
-                                    self.Log.debug(cmd_obj)
+                                else:                                    
                                     addr        = str2hex(cmd_obj[0])
                                     insteon_cmd = cmd_obj[1]
                                     val         = cmd_obj[2]
@@ -556,11 +557,7 @@ class InsteonPLM(object):
                     sleep(0.1)
                 else:
                     break
-
             data.append([k, stat, v])
-            
-            
-
         return data
 
 ###########################################################################################################
@@ -581,13 +578,15 @@ if __name__ == '__main__':
     arguments = docopt(__doc__, version='Naval Fate 2.0')
     #print(arguments)
     
+    print(arguments.get('redislog',False))
+
     if arguments.get('rule',False):
         print('"SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="A6007x0g", SYMLINK+="insteon_plm"')
     if arguments.get('test',False):
         print("test")
         plm = InsteonPLM('/dev/insteon_plm')        
 
-    if arguments.get('run',False):
+    if arguments.get('run',False):        
         main()
 
     del(plm)
