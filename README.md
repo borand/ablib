@@ -1,4 +1,4 @@
 ablib
 =====
 
-repository of various useful scripts
+Random scripts
