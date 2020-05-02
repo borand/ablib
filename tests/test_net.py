@@ -2,21 +2,19 @@ import unittest
 import sys
 
 sys.path.append('../')
-from src.calculators.fincalc import Investments, Loan, run
+import src.net.scan as scan
+
 
 class MyTestCase(unittest.TestCase):
+
     def test_investments_creation(self):
-        tfsa = Investments("tfsa", 1000,1)
-        run(tfsa,12)
-        tfsa.summary()
+        print('IP address: {}'.format(scan.get_host_ip()))
         self.assertEqual(1,1)
 
     def test_load_creation(self):
-        tfsa = Loan("mort", 100e3,3,25)
-        run(tfsa,25*12)
-        tfsa.summary()
+        out = scan.find_db_server()
+        print(out)
         self.assertEqual(1,1)
-
 
 if __name__ == '__main__':
     unittest.main()
