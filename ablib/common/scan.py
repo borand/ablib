@@ -1,14 +1,16 @@
 import argparse
-import time
 import re
 import sh
 import socket
-import serial
+import redis
+import subprocess
+from serial.tools import list_ports
 import json
 from time import sleep
 from datetime import datetime
 import logging
 import requests
+import paho.mqtt.client as mqtt
 
 #
 logger = logging.getLogger("net.scan")
@@ -62,27 +64,56 @@ def find_db_server(db_server_port=8000):
     return (valid_ip, full_db_server_ip, api_url)
 
 def scan_serial_ports():
-    pass
-    # # self.log.debug('run()')
-    # ports = serial.tools.list_ports.comports()
-    # for p in ports:
-    #     # self.log.debug("Attempting to open port {}".format(self.port))
-    #     self.serial = serial.Serial(port, 115200)
-    #     self.serial.timeout = 1
-    #     time.sleep(1)
-    #     self.open()
-    #     self.send('idn')
-    #     done = self.read('idn',1)[0]
-    #     if done:
-    #         # self.log.info("Found hydro sensor on port {}".format(self.serial.port))
-    #         self.alive = True
-    #         return
-    #     else:
-    #         self.close()
-    #         self.serial.__del__()
-    # # self.log.info("Did not find hydro sensor port :(")
+    ports = list_ports.comports()
+    return [p.device for p in ports]
+
+def find_redis_servers():
+    logger.debug("find_redis_servers() start")
+    redis_servers = []
+    pinged_hosts = ping_all()
+    pinged_hosts.append('127.0.0.1')
+    for host_ip in pinged_hosts:
+        try:
+            r = redis.Redis(host=host_ip, socket_timeout=0.1, socket_connect_timeout=0.1,)
+            r.ping()
+            redis_servers.append(host_ip)
+        except Exception as ex:
+            logger.error(ex)
+
+    return redis_servers
+
+def find_mqtt_brokers():
+    logger.debug("find_mqtt_brokers() start")
+    mqtt_brokers = []
+    pinged_hosts = ping_all()
+    pinged_hosts.append('127.0.0.1')
+    client = mqtt.Client("Test")
+    for host_ip in pinged_hosts:
+        try:
+            out = client.connect(host_ip, keepalive=1)
+            if out==0:
+                mqtt_brokers.append(host_ip)
+        except Exception as ex:
+            logger.debug(ex)
+
+    return mqtt_brokers
+
+def ping(ip='192.168.50.1', wait=1):
+    status, result = subprocess.getstatusoutput("ping -c1 -W{} {} ".format(wait, ip))
+    # return True when ping successful
+    return (not status, result)
+
+def ping_all():
+    """
+    From: https://stackoverflow.com/questions/14038606/fastest-way-to-ping-a-network-range-and-return-responsive-hosts
+    :return:
+    """
+    status, result = subprocess.getstatusoutput('nmap -T5 -sP 192.168.50.0-255')
+    ip_re = re.compile("(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
+    return ip_re.findall(result)
 
 
 if __name__ == "__main__":
-    print(find_db_server())
-    print(get_host_ip())
+    #print(find_db_server())
+    #print(get_host_ip())
+    print("Redis servers: {}".format(find_redis_servers()))

@@ -1,11 +1,8 @@
-import socket
 import logging
 import os
 import glob
-import requests
 import re
 import time
-from requests.auth import HTTPBasicAuth
 
 from ablib.common.sensordatadb import SensorDataDb
 
@@ -94,7 +91,7 @@ class RPiOneWire():
 if __name__  == '__main__':
 
     ow = RPiOneWire()
-    ow.register_gateway()
+    ow.register_node()
     ow.register_all_devices()
     while True:
         ow.submit_data_to_db()

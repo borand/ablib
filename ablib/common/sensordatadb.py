@@ -197,4 +197,3 @@ if __name__  == '__main__':
     db.register_device_instance("0")
     sensor_data = [["0", 1]]
     db.submit_data_to_db(sensor_data)
-    # db.register_gateway()
