@@ -144,27 +144,26 @@ class SensorDataDb():
                 logger.info("register_gateway() : gateway {} already registered in {}".format(gateway_ip, self.ip))
                 return
 
-            if not self.gateway_registered:
-                gateway_data = {
-                    "id": 2,
-                    "name": socket.gethostname(),
-                    "address": gateway_ip,
-                    "port": 8888,
-                    "protocol": "rest",
-                    "url": "http://{}".format(gateway_ip),
-                    "mac_address": "none",
-                    "active": True,
-                    "process_name": "",
-                    "process_pid": 0,
-                    "description": ""
-                }
+            gateway_data = {
+                "id": 2,
+                "name": socket.gethostname(),
+                "address": gateway_ip,
+                "port": 8888,
+                "protocol": "rest",
+                "url": "http://{}".format(gateway_ip),
+                "mac_address": "none",
+                "active": True,
+                "process_name": "",
+                "process_pid": 0,
+                "description": ""
+            }
 
-                r = self.update_table('gateway',gateway_data)
-                if r.ok:
-                    logger.info("Registered the gateway")
+            r = self.update_table('gateway',gateway_data)
+            if r.ok:
+                logger.info("Registered the gateway")
 
         except Exception as err:
-            print("Exception: {0}".format(err))
+            logger.error("Exception: {0}".format(err))
 
     def submit_data_to_db(self, sensor_data):
         logger.debug("submit_data_to_db()")
