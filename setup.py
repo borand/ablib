@@ -5,11 +5,12 @@
 from setuptools import setup, find_packages
 import os
 
+# FROM: https://stackoverflow.com/questions/26900328/install-dependencies-from-setup-py
 the_lib_folder = os.path.dirname(os.path.realpath(__file__))
-requirementPath = the_lib_folder + '/requirements.txt'
-install_requires = [] # Examples: ["gunicorn", "docutils>=0.3", "lxml==0.5a7"]
-if os.path.isfile(requirementPath):
-    with open(requirementPath) as f:
+requirement_path = the_lib_folder + '/requirements.txt'
+install_requires = []
+if os.path.isfile(requirement_path):
+    with open(requirement_path) as f:
         install_requires = f.read().splitlines()
 
 with open('README.md') as f:
