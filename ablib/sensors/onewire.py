@@ -2,9 +2,14 @@ import logging
 import os
 import glob
 import re
+import datetime
 import time
 
-from ablib.common.sensordatadb import SensorDataDb
+from pathlib import Path
+from itertools import compress
+
+from ablib.common.sensordatadb import SensorDataDb, Publisher
+from ablib.common import scan
 
 # Create a custom logger
 logger = logging.getLogger(__name__)
@@ -28,7 +33,11 @@ sn_expr = re.compile(r'/(\w{2}-\w*)/w1_slave')
 class RPiOneWire():
 
     def __init__(self):
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
         self.devices_dir = '/sys/bus/w1/devices/'
+        if not os.path.exists(self.devices_dir):
+            self.devices_dir = BASE_DIR + '/../fixtures'
         self.db = SensorDataDb(8000, user='pi', pswd='t2yCVyjzS4fVsAN')
 
     def register_node(self):
@@ -53,15 +62,20 @@ class RPiOneWire():
             logger.debug("     {}".format(sn))
         return dev_sn
 
-    def register_all_devices(self):
+    def register_all_devices(self, sn_list=[]):
         logger.debug('register_all_devices()')
-        sn_list = self.list_devices()
+
+        if len(sn_list) == 0:
+            sn_list = self.list_devices()
 
         if len(sn_list) == 0:
             return
+        di = self.db.get_table('deviceinstance')
+        db_sn = [x['serial_number'] for x in di]
 
         for sn in sn_list:
-            self.db.register_device_instance(sn)
+            if sn not in db_sn:
+                self.db.register_device_instance(sn)
 
     def get_sensor_data(self):
         logger.debug("get_sensor_data()")
@@ -88,11 +102,50 @@ class RPiOneWire():
 
         return sensor_data
 
+def run(pause_sec=1):
+
+    # Save PID file
+    homedir = str(Path.home())
+    fn = __name__
+    now = datetime.datetime.now()
+    timestamp = now.strftime('%Y_%m_%d_%H%M%s')
+    pid_filename = homedir + '/'  + fn.split('.')[-1] + '_PID.txt'
+
+    # Save pid file with timestamp
+    fid = open(pid_filename,'w')
+    fid.writelines(timestamp)
+    fid.close()
+
+    row = RPiOneWire()
+    p = Publisher(mqtt_server=['192.168.50.3'], redis_server=['127.0.0.1'])
+
+    pid = Path(pid_filename)
+    # Start loop
+    while pid.exists():
+        data = row.get_sensor_data()
+        p.publish_data({'timestamp': datetime.datetime.now(), 'data': data})
+        time.sleep(pause_sec)
+
+
+    # register new devices in db
+    #
+    # get temperature readings
+    #
+    # Save to onewire.json file
+    # check if db online if not scan for db
+    # submit data to db
+    #
+    # publish data to reids
+    # publish data to mqtt
+    # publish state to mqtt
+
+
+
 if __name__  == '__main__':
 
     ow = RPiOneWire()
-    ow.register_node()
-    ow.register_all_devices()
-    while True:
-        ow.submit_data_to_db()
-        time.sleep(1)
+    p = Publisher(mqtt_server=['192.168.50.3'], redis_server=['127.0.0.1'])
+
+    data = ow.get_sensor_data()
+    p.publish_data({'timestamp':datetime.datetime.now(), 'data':data})
+

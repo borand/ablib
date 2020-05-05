@@ -5,6 +5,7 @@ import socket
 import redis
 import subprocess
 from serial.tools import list_ports
+from copy import deepcopy
 import json
 from time import sleep
 from datetime import datetime
@@ -67,12 +68,15 @@ def scan_serial_ports():
     ports = list_ports.comports()
     return [p.device for p in ports]
 
-def find_redis_servers():
+def find_redis_servers(hosts=[]):
     logger.debug("find_redis_servers() start")
+
     redis_servers = []
-    pinged_hosts = ping_all()
-    pinged_hosts.append('127.0.0.1')
-    for host_ip in pinged_hosts:
+    if len(hosts)==0:
+        hosts = ping_all()
+        hosts.append('127.0.0.1')
+
+    for host_ip in hosts:
         try:
             r = redis.Redis(host=host_ip, socket_timeout=0.1, socket_connect_timeout=0.1,)
             r.ping()
@@ -82,14 +86,18 @@ def find_redis_servers():
 
     return redis_servers
 
-def find_mqtt_brokers():
+def find_mqtt_brokers(hosts=[]):
     logger.debug("find_mqtt_brokers() start")
+
     mqtt_brokers = []
-    pinged_hosts = ping_all()
-    pinged_hosts.append('127.0.0.1')
+    if len(hosts)==0:
+        hosts = ping_all()
+        hosts.append('127.0.0.1')
+
     client = mqtt.Client("Test")
-    for host_ip in pinged_hosts:
+    for host_ip in hosts:
         try:
+            logger.debug("   attempting to reach {}".format(host_ip))
             out = client.connect(host_ip, keepalive=1)
             if out==0:
                 mqtt_brokers.append(host_ip)
@@ -116,4 +124,6 @@ def ping_all():
 if __name__ == "__main__":
     #print(find_db_server())
     #print(get_host_ip())
-    print("Redis servers: {}".format(find_redis_servers()))
+    #print("Redis servers: {}".format(find_redis_servers()))
+    print("Redis servers: {}".format(find_redis_servers(['127.0.0.1'])))
+    print(find_mqtt_brokers(['192.168.50.3']))

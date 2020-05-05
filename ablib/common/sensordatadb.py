@@ -2,8 +2,12 @@ import socket
 import logging
 import requests
 import re
-import time
+import datetime
+import json
+
+
 from requests.auth import HTTPBasicAuth
+import paho.mqtt.client as mqtt
 
 from ablib.common import scan
 
@@ -28,7 +32,7 @@ sn_expr = re.compile(r'/(\w{2}-\w*)/w1_slave')
 
 class SensorDataDb():
 
-    def __init__(self, port, user='andrzej', pswd='admin'):
+    def __init__(self, port=8000, user='andrzej', pswd='admin'):
         (ip_num, ip_str, api_url) = scan.find_db_server(db_server_port=port)
         self.ip = ip_str
         self.port = port
@@ -165,19 +169,27 @@ class SensorDataDb():
         except Exception as err:
             logger.error("Exception: {0}".format(err))
 
-    def submit_data_to_db(self, sensor_data):
+    def submit_data_to_db(self, sensor_data, timestamp=None):
         logger.debug("submit_data_to_db()")
 
         if not self.is_db_server_online():
             logger.debug("submit_data_to_db() - DB server seems to be offline")
             return
 
-        for sd in sensor_data:
-            serial_number = sd[0]
-            sensor_value = sd[1]
+        if timestamp is None:
+            timestamp = datetime.datetime.now()
 
-            url = '{0}api/sub/now/sn/{1}/val/{2}'.format(self.api_url, serial_number, sensor_value)
+        # API format
+        # (?P < datestamp > \d{4}\-\d{1, 2}\-\d{1, 2}-\d{1, 2}:\d{1, 2}:\d{1, 2}\.* \d{0, 6})
+        timestamp_str = timestamp.strftime("%Y-%m-%d-%H:%M:%S")
+
+        for sd in sensor_data:
+
             try:
+                serial_number = sd[0]
+                sensor_value = sd[1]
+
+                url = '{0}api/sub/{1}/sn/{2}/val/{3}'.format(self.api_url, timestamp_str, serial_number, sensor_value)
                 api_out = requests.get(url)
                 if api_out.ok:
                     logger.debug(api_out.json())
@@ -187,12 +199,81 @@ class SensorDataDb():
             except Exception as ex:
                 logger.error(ex)
 
+
+class Publisher():
+
+    def __init__(self, mqtt_server=[], redis_server=[]):
+        self.db = SensorDataDb()
+        self.reids_list = scan.find_redis_servers(redis_server)
+        self.mqtt_list = scan.find_mqtt_brokers(mqtt_server)
+        self.mqqt_topick  = 'sensors/data'
+        self.redis_channel = 'sensors/data'
+
+        # Keep a local copy of serial number
+        self._gateway = scan.get_host_ip() + ' ' + socket.gethostname()
+        self._serial_numbers_in_db = []
+        self._serial_numbers_in_db_last_updated = []
+
+        self._update_serial_number()
+
+    def _update_serial_number(self):
+
+        if self.db.is_db_server_online():
+            device_instance = self.db.get_table('deviceinstance')
+            self._serial_numbers_in_db = [x['serial_number'] for x in device_instance]
+            self._serial_numbers_in_db_last_updated = datetime.datetime.now()
+        else:
+            logger.info("Cannot query database, the database is not online and not responding to ping")
+
+    def publish_data(self, data={}):
+        """
+        Submits data to database and publishes results to all pub/sub channels
+
+        :param data: dictionary of readings containing serial number, value pairs.
+        :return:
+        """
+
+        if len(data.keys()) == 0:
+            logger.info("No data to publish")
+            return
+
+        timestamp = data["timestamp"]
+
+        for entry in data["data"]:
+            sn  = entry[0]
+            if sn not in self._serial_numbers_in_db:
+                self.db.register_device_instance(sn)
+                self._update_serial_number()
+
+        self.db.submit_data_to_db(data["data"], timestamp)
+
+        if len(self.reids_list) != 0:
+            pass
+
+
+        if len(self.mqtt_list) != 0:
+            client = mqtt.Client("Test")
+            client.connect(self.mqtt_list[0], keepalive=1)
+
+            for entry in data["data"]:
+                client.publish(self.mqqt_topick, json.dumps(entry))
+
+
+
+
+
+
+
+
 if __name__  == '__main__':
 
-    db = SensorDataDb(8000)
-    db.is_db_server_online()
-    db.get_table("gateway")
-    db.register_gateway()
-    db.register_device_instance("0")
+    # db = SensorDataDb(8000)
+    # db.is_db_server_online()
+    # db.get_table("gateway")
+    # db.register_gateway()
+    # db.register_device_instance("0")
     sensor_data = [["0", 1]]
-    db.submit_data_to_db(sensor_data)
+    ts = datetime.datetime.now()
+    # db.submit_data_to_db(sensor_data)
+    p = Publisher(mqtt_server=['192.168.50.3'], redis_server=['127.0.0.1'])
+    p.publish_data({'timestamp': ts, 'data': [['0', 1]]})
