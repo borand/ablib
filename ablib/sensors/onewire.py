@@ -102,7 +102,7 @@ class RPiOneWire():
 
         return sensor_data
 
-def run(pause_sec=1):
+def run(pause_sec=10):
 
     # Save PID file
     homedir = str(Path.home())
@@ -123,7 +123,11 @@ def run(pause_sec=1):
     # Start loop
     while pid.exists():
         data = row.get_sensor_data()
-        p.publish_data({'timestamp': datetime.datetime.now(), 'data': data})
+        try:
+            p.publish_data({'timestamp': datetime.datetime.now(), 'data': data})
+        except:
+            pass
+
         time.sleep(pause_sec)
 
 
