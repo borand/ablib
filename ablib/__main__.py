@@ -98,8 +98,8 @@ def parse_cmd_args(cmd_args):
         title='List of sub commands', description='A description of all the available sub commmands', help='All the commands', dest='subparser_name')
 
     # code for subparser command a
-    parser_a = subparsers.add_parser('download', help='help for downloading')
-    parser_a.add_argument('url', type=str, help='url for downloading from')
+    parser_a = subparsers.add_parser('w1', help='help for downloading')
+    # parser_a.add_argument('url', type=str, help='url for downloading from')
     # a function to call when subparser invoked
     parser_a.set_defaults(func=w1.start)
 
