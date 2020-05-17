@@ -99,7 +99,7 @@ def parse_cmd_args(cmd_args):
 
     # code for subparser command a
     parser_a = subparsers.add_parser('w1', help='help w1 - onewire acquisition')
-    # parser_a.add_argument('url', type=str, help='url for downloading from')
+    parser_a.add_argument('--pause', type=int, default=10, help='fixed delay between one wire measurements')
     # a function to call when subparser invoked
     parser_a.set_defaults(func=w1.start)
 

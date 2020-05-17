@@ -11,7 +11,7 @@ class MyFormatter(logging.Formatter):
     based on https://stackoverflow.com/a/14859558
     """
     # the base format, used when a format for a specific level is not defined
-    base_format = '%(levelname)s: %(asctime)-8s [%(filename)s:%(lineno)d]: %(message)s \n'
+    base_format = '%(asctime)-8s | %(levelname)s:  | [%(filename)s:%(lineno)d]: %(message)s \n'
 
     # defining the critical format
     critical_format = base_format
