@@ -22,7 +22,7 @@ with open('LICENSE') as f:
 
 setup(
     name='ablib',
-    version=ablib.__version__.__version__,
+    version='0.2.3',#ablib.__version__.__version__,
     description='My common utility and tools',
     long_description=readme,
     author='Dr. Zej B',
