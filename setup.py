@@ -3,6 +3,7 @@
 # based on: https://github.com/kennethreitz/setup.py
 
 from setuptools import setup, find_packages
+import ablib
 import os
 
 # FROM: https://stackoverflow.com/questions/26900328/install-dependencies-from-setup-py
@@ -21,7 +22,7 @@ with open('LICENSE') as f:
 
 setup(
     name='ablib',
-    version='0.1.0',
+    version=ablib.__version__.__version__,
     description='My common utility and tools',
     long_description=readme,
     author='Dr. Zej B',
@@ -29,5 +30,10 @@ setup(
     url='https://github.com/borand/ablib',
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
-    install_requires=install_requires
+    install_requires=install_requires,
+    entry_points={  # points to where the cli is located
+        "console_scripts": [
+            'ab = ablib.__main__:main'
+        ]
+    }
 )

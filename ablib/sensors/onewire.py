@@ -6,10 +6,9 @@ import datetime
 import time
 
 from pathlib import Path
-from itertools import compress
 
 from ablib.common.sensordatadb import SensorDataDb, Publisher
-from ablib.common import scan
+
 
 # Create a custom logger
 logger = logging.getLogger(__name__)
@@ -30,20 +29,19 @@ crc = re.compile(r"crc=\w{2} (\w+)")
 t_C = re.compile(r"t=(-*\d+)")
 sn_expr = re.compile(r'/(\w{2}-\w*)/w1_slave')
 
-class RPiOneWire():
+
+class RPiOneWire:
 
     def __init__(self):
-        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         self.devices_dir = '/sys/bus/w1/devices/'
         if not os.path.exists(self.devices_dir):
-            self.devices_dir = BASE_DIR + '/../fixtures'
+            self.devices_dir = base_dir + '/../fixtures'
         self.db = SensorDataDb(8000, user='pi', pswd='t2yCVyjzS4fVsAN')
 
     def register_node(self):
         """
-        :param db_server_ip: - last digit of the gateway IP
-        :return: True if the gateway was registered False if DB IP was invalid or could not register the gateway
         """
         self.db.register_gateway()
 
@@ -102,34 +100,33 @@ class RPiOneWire():
 
         return sensor_data
 
-def run(pause_sec=10):
 
+def run(pause_sec=10):
     # Save PID file
     homedir = str(Path.home())
     fn = __name__
     now = datetime.datetime.now()
     timestamp = now.strftime('%Y_%m_%d_%H%M%s')
-    pid_filename = homedir + '/'  + fn.split('.')[-1] + '_PID.txt'
+    pid_filename = homedir + '/' + fn.split('.')[-1] + '_PID.txt'
 
     # Save pid file with timestamp
-    fid = open(pid_filename,'w')
+    fid = open(pid_filename, 'w')
     fid.writelines(timestamp)
     fid.close()
 
     row = RPiOneWire()
-    p = Publisher(mqtt_server=['192.168.50.3'], redis_server=['127.0.0.1'])
+    publisher = Publisher(mqtt_server=['192.168.50.3'], redis_server=['127.0.0.1'])
 
     pid = Path(pid_filename)
     # Start loop
     while pid.exists():
-        data = row.get_sensor_data()
+        sensor_data = row.get_sensor_data()
         try:
-            p.publish_data({'timestamp': datetime.datetime.now(), 'data': data})
-        except:
-            pass
+            publisher.publish_data({'timestamp': datetime.datetime.now(), 'data': sensor_data})
+        except Exception as e:
+            logger.error(e)
 
         time.sleep(pause_sec)
-
 
     # register new devices in db
     #
@@ -144,12 +141,9 @@ def run(pause_sec=10):
     # publish state to mqtt
 
 
-
-if __name__  == '__main__':
-
+if __name__ == '__main__':
     ow = RPiOneWire()
     p = Publisher(mqtt_server=['192.168.50.3'], redis_server=['127.0.0.1'])
 
     data = ow.get_sensor_data()
-    p.publish_data({'timestamp':datetime.datetime.now(), 'data':data})
-
+    p.publish_data({'timestamp': datetime.datetime.now(), 'data': data})
