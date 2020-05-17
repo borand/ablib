@@ -5,7 +5,7 @@ import logging
 import argparse
 import sys
 import os
-from ablib.run import w1
+from ablib.run import w1, upload
 
 
 def main():
