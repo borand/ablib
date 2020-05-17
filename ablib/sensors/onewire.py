@@ -115,30 +115,23 @@ def run(pause_sec=10):
     fid.close()
 
     row = RPiOneWire()
-    publisher = Publisher(mqtt_server=['192.168.50.3'], redis_server=['127.0.0.1'])
+    publisher = Publisher()
 
     pid = Path(pid_filename)
     # Start loop
-    while pid.exists():
-        sensor_data = row.get_sensor_data()
-        try:
-            publisher.publish_data({'timestamp': datetime.datetime.now(), 'data': sensor_data})
-        except Exception as e:
-            logger.error(e)
+    try:
+        while pid.exists():
+            sensor_data = row.get_sensor_data()
+            try:
+                publisher.publish_data({'timestamp': datetime.datetime.now(), 'data': sensor_data})
+            except Exception as e:
+                logger.error(e)
 
-        time.sleep(pause_sec)
+            time.sleep(pause_sec)
 
-    # register new devices in db
-    #
-    # get temperature readings
-    #
-    # Save to onewire.json file
-    # check if db online if not scan for db
-    # submit data to db
-    #
-    # publish data to reids
-    # publish data to mqtt
-    # publish state to mqtt
+    except KeyboardInterrupt:
+        print("Press Ctrl-C to terminate while statement")
+        pass
 
 
 if __name__ == '__main__':

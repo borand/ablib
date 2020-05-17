@@ -14,5 +14,3 @@ def start(args):
         'Used to record an error that caused the program to fail to do something')
     logging.critical(
         'The highest level. Used to indicate a fatal error that has caused or is about to cause the program to stop running entirely.')
-
-    print(args.url, args.file)
