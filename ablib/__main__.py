@@ -13,7 +13,7 @@ def main():
     args = parse_cmd_args(sys.argv[1:])
     # if verbose flag not passed on as an argument, this will disable all logging levels
     if not args.verbose:
-        logging.disable(logging.CRITICAL)  # This will disable all logging
+        logging.disable(logging.INFO)  # This will disable all logging
         # the table below shows the logging levels and there value. if you set the level above (changing "CRITICAL") will
         # change what message is shown. any logging types with a numeric value BELOW AND EQUAL the set level will not be show
         # e.g. if the level is ERROR, only CRITICAL will be shown as 50 > 40
@@ -43,7 +43,7 @@ def main():
 
     # identifying if a subparser is invoked. if invoked, call appripriate function
     if 'func' in vars(args):
-        print('calling the appropriate function for parser')
+        print(f'ablib: {args}')
         args.func(args)
 
     # # below are logging levels with "debug" being the lowest and "critical" being the highest
@@ -70,7 +70,7 @@ def parse_cmd_args(cmd_args):
 
     # create the arguent parser
     parser = argparse.ArgumentParser(
-        description='A description of the cli program')
+        description='Ablib utility launcher')
 
     # mutually exclusive means that only one option can be supplied. supplying both will result in an error
     group = parser.add_mutually_exclusive_group()

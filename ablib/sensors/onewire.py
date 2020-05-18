@@ -130,7 +130,7 @@ def run(pause_sec=10):
             time.sleep(pause_sec)
 
     except KeyboardInterrupt:
-        print("Press Ctrl-C to terminate while statement")
+        print("Terminated by a keyboard interrupt")
         pass
 
 
