@@ -1,7 +1,6 @@
 import socket
 import logging
 import requests
-import re
 import datetime
 import json
 import paho.mqtt.client as mqtt
@@ -18,24 +17,21 @@ except ImportError:
 from requests.auth import HTTPBasicAuth
 from ablib.common import scan
 
-# Create a custom logger
-logger = logging.getLogger(__name__)
-
-# Create handlers
-c_handler = logging.StreamHandler()
-c_handler.setLevel(logging.DEBUG)
-
-# Create formatters and add it to handlers
-c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-c_handler.setFormatter(c_format)
-
-# Add handlers to the logger
-logger.addHandler(c_handler)
-logger.setLevel(logging.DEBUG)
-
-crc = re.compile(r"crc=\w{2} (\w+)")
-t_C = re.compile(r"t=(-*\d+)")
-sn_expr = re.compile(r'/(\w{2}-\w*)/w1_slave')
+# # Create a custom logger
+# logger = logging.getLogger(__name__)
+#
+# # Create handlers
+# c_handler = logging.StreamHandler()
+# c_handler.setLevel(logging.INFO)
+#
+# # Create formatters and add it to handlers
+# c_format = logging.Formatter(
+#     '%(asctime)-8s| %(filename)-20s %(funcName)-20s |%(lineno)4d | %(levelname)9s | %(message)s', "%Y.%m.%d %H:%M")
+# c_handler.setFormatter(c_format)
+#
+# # Add handlers to the logger
+# # logger.addHandler(c_handler)
+# logger.setLevel(logging.INFO)
 
 
 class SensorDataDb:
@@ -57,7 +53,7 @@ class SensorDataDb:
     def is_db_server_online(self):
 
         if len(self.api_url) == 0:
-            logger.error(
+            logging.error(
                 "is_db_server_online()  :  Do not have a valid api_url, running find_db_server(), then try the function again")
             self.find_all_servers()
 
@@ -67,20 +63,20 @@ class SensorDataDb:
                 pong_url = f'http://{server_ip}:{self.port}/ping'
                 pong = requests.get(pong_url)
                 if not pong.ok:
-                    logger.warning("is_db_server_online()  :  Did not receive PONG")
+                    logging.warning("is_db_server_online()  :  Did not receive PONG")
                 else:
-                    # logger.debug("is_db_server_online()  :  got PONG from {} : {}".format(pong_url, pong.text))
+                    # logging.debug("is_db_server_online()  :  got PONG from {} : {}".format(pong_url, pong.text))
                     db_server_online[server_ix] = True
 
             except Exception as ex:
-                logger.error("is_db_server_online()  : {}".format(ex))
+                logging.error("is_db_server_online()  : {}".format(ex))
 
         return db_server_online
 
     def fetch_url(self, url_cmd, as_json=True):
 
         if not any(self.is_db_server_online()):
-            logger.error("No database servers are online")
+            logging.error("No database servers are online")
             pass
         num_of_servers = len(self.ip)
 
@@ -102,11 +98,11 @@ class SensorDataDb:
                     else:
                         api_raw[ix] = api_out.text
                 else:
-                    logger.error(f"   request error: {api_raw[ix]}")
+                    logging.error(f"   request error: {api_raw[ix]}")
                     error_msg[ix] = api_raw
 
             except ConnectionError as e:
-                logger.error(f"   Connection error: {e}")
+                logging.error(f"   Connection error: {e}")
                 error_msg[ix] = e
 
         return api_raw, error_flag, error_msg
@@ -127,7 +123,7 @@ class SensorDataDb:
         return tables
 
     def register_device_instance(self, sn):
-        logger.debug("register_device_instance({})".format(sn))
+        logging.debug("register_device_instance({})".format(sn))
         api_data = {
             "device": 1,
             "accept_from_gateway_only": False,
@@ -149,23 +145,23 @@ class SensorDataDb:
                                         json=api_data,
                                         auth=HTTPBasicAuth(self.user, self.pswd))
                 if api_out.ok:
-                    logger.debug(f"SN: {sn} REGISTERED in {self.api_url[ix]}")
+                    logging.debug(f"SN: {sn} REGISTERED in {self.api_url[ix]}")
                 else:
-                    logger.debug("  api_out = {}".format(api_out))
+                    logging.debug("  api_out = {}".format(api_out))
             else:
-                logger.debug(f"SN: {sn} already exists in {self.api_url[ix]}")
+                logging.debug(f"SN: {sn} already exists in {self.api_url[ix]}")
 
     def update_table(self, url, table, data):
-        logger.debug("update_table({}, {})".format(table, data))
+        logging.debug("update_table({}, {})".format(table, data))
 
         r = requests.post('{}/{}/?format=api'.format(url, table),
                           json=data,
                           auth=HTTPBasicAuth(self.user, self.pswd))
 
         if r.status_code == 200 or r.status_code == 201:
-            logger.info(f"Registered the gateway {url}, status code {r.status_code}")
+            logging.info(f"Registered the gateway {url}, status code {r.status_code}")
         else:
-            logger.error("update_table() : status code {}".format(r.status_code))
+            logging.error("update_table() : status code {}".format(r.status_code))
         return r
 
     def register_gateway(self):
@@ -194,14 +190,14 @@ class SensorDataDb:
                         "process_name": "",
                         "process_pid": 0,
                         "description": ""
-                        }
+                    }
                     self.update_table(self.api_url[ix], 'gateway', gateway_data)
 
         except Exception as err:
-            logger.error("Exception: {0}".format(err))
+            logging.error("Exception: {0}".format(err))
 
     def submit_data_to_db(self, data_list, timestamp=None):
-        logger.debug("submit_data_to_db()")
+        logging.debug("submit_data_to_db()")
 
         if timestamp is None:
             timestamp = datetime.datetime.now()
@@ -220,15 +216,15 @@ class SensorDataDb:
                     url = f'{db_url}/sub/{timestamp_str}/sn/{sn}/val/{val}'
                     api_out = requests.get(url)
                     if api_out.ok:
-                        logger.debug(api_out.json())
+                        logging.debug(api_out.json())
                     else:
-                        logger.warning("api_out code: {} api_out text: {}".format(api_out.status_code, api_out.text))
+                        logging.warning("api_out code: {} api_out text: {}".format(api_out.status_code, api_out.text))
 
                 except Exception as ex:
-                    logger.error(ex)
+                    logging.error(ex)
 
     def get_days_data(self, sn, yy, mo, dd, days=1, db_ix=0):
-        logger.debug(f"get_days_data({sn}, {yy}, {mo}, {dd})")
+        logging.debug(f"get_days_data({sn}, {yy}, {mo}, {dd})")
         t = datetime.date(yy, mo, dd)
         t = t + datetime.timedelta(days=days)
         yy2 = t.year
@@ -239,7 +235,7 @@ class SensorDataDb:
             return
 
         data_url = f'{self.api_url[db_ix]}/data/sn/{sn}/from/{yy}-{mo}-{dd}/to/{yy2}-{mo2}-{dd2}'
-        logger.debug(f"   full api url: {data_url}")
+        logging.debug(f"   full api url: {data_url}")
 
         api_out = {"status": 0}
         try:
@@ -247,9 +243,9 @@ class SensorDataDb:
             if api_raw.ok:
                 api_out = api_raw.json()
             else:
-                logger.error(f"   request error: {api_raw}")
+                logging.error(f"   request error: {api_raw}")
         except ConnectionError as e:
-            logger.error(f"   Connection error: {e}")
+            logging.error(f"   Connection error: {e}")
 
         return api_out
 
@@ -257,14 +253,19 @@ class SensorDataDb:
 class Publisher:
 
     def __init__(self, mqtt_server=None, redis_server=None):
+
         if redis_server is None:
-            redis_server = []
+            self.redis_server_list = scan.find_redis_servers(redis_server)
+        else:
+            self.redis_server_list = redis_server
+
         if mqtt_server is None:
-            mqtt_server = []
+            self.mqtt_server_list = scan.find_mqtt_brokers(mqtt_server)
+        else:
+            self.mqtt_server_list = mqtt_server
 
         self.db = SensorDataDb()
-        self.reids_list = scan.find_redis_servers(redis_server)
-        self.mqtt_list = scan.find_mqtt_brokers(mqtt_server)
+
         self.mqqt_topic = 'sensors/data'
         self.redis_channel = 'sensors/data'
 
@@ -276,25 +277,36 @@ class Publisher:
         self._serial_numbers_in_db_last_updated = []
 
         self._update_serial_number()
+        logging.info(f"Publiser(@{self._gateway})")
+        logging.info(f"   sendor db: {self.db.ip}")
+        logging.info(f"        mqtt: {self.mqtt_server_list}")
+        logging.info(f"       redis: {self.redis_server_list}")
+
+    def __repr__(self):
+        return f"Publiser(@{self._gateway})"
+
+    def __str__(self):
+        return self.__repr__()
 
     def _update_serial_number(self):
         self._api_urls_of_db = self.db.api_url
-        self._serial_numbers_in_db = self.db.get_table('deviceinstance','serial_number')
+        self._serial_numbers_in_db = self.db.get_table('deviceinstance', 'serial_number')
         self._serial_numbers_in_db_last_updated = datetime.datetime.now()
 
-    def publish_data(self, dataset={}):
+    def publish_data(self, dataset):
         """
         Submits data to database and publishes results to all pub/sub channels
 
         :param dataset: dictionary of readings containing serial number, value pairs.
         :return:
         """
+        timestamp = dataset["timestamp"]
 
         if len(dataset.keys()) == 0:
-            logger.info("No data to publish")
+            logging.info("No data to publish")
             return
 
-        timestamp = dataset["timestamp"]
+        logging.info(f"Publishing {dataset} @ {timestamp}")
 
         for entry in dataset["data"]:
             sn = entry[0]
@@ -302,24 +314,35 @@ class Publisher:
 
         self.db.submit_data_to_db(dataset["data"], timestamp)
 
-        if len(self.reids_list) != 0:
-            r = redis.Redis('192.168.50.3')
-            for entry in dataset["data"]:
-                r.set(f'{entry[0]}', f'{entry[1]}')
+        # Publish data to redis server
+        for redis_server in self.redis_server_list:
+            try:
+                r = redis.Redis(redis_server)
+                for entry in dataset["data"]:
+                    r.set(f'{entry[0]}', f'{entry[1]}')
+                logging.info(f"  published to redis")
+            except Exception as e:
+                logging.error(e)
 
-        if len(self.mqtt_list) != 0:
-            client = mqtt.Client("Test")
-            client.connect(self.mqtt_list[0], keepalive=60)
+        # Publish data to MQTT broker
+        for mqtt_server in self.mqtt_server_list:
+            try:
+                client = mqtt.Client("Test")
+                client.connect(mqtt_server, keepalive=60)
 
-            for entry in dataset["data"]:
-                client.publish(f'{self.mqqt_topic}/{entry[0]}', json.dumps({'val': entry[1]}))
-                out = client.publish(f'{self.mqqt_topic}', json.dumps(entry))
-                print(out.is_published())
+                for entry in dataset["data"]:
+                    client.publish(f'{self.mqqt_topic}/{entry[0]}', json.dumps({'val': entry[1]}))
+                    out = client.publish(f'{self.mqqt_topic}', json.dumps(entry))
+                    logging.debug(f"Published {entry} to mqtt: {out.is_published()}")
+                logging.info(f"  published to mqtt topick {self.mqqt_topic}")
+
+            except Exception as e:
+                logging.error(e)
 
 
 def json_to_np(json_data, sec=False, resample=False):
     if not have_np:
-        logger.error(f"This function requires NumPy and Pandas installed")
+        logging.error(f"This function requires NumPy and Pandas installed")
     else:
         sensordata = np.array(json_data['data'])
         dates = sensordata[:, 0] - 5 * 3600
@@ -339,13 +362,7 @@ def json_to_np(json_data, sec=False, resample=False):
 
 
 if __name__ == '__main__':
-    # s = SensorDataDb()
-    # s.register_device_instance('y')
-    # s.register_gateway()
-    # s.submit_data_to_db([['y', 1]])
-    # s.get_days_data('y', 2020, 5, 15)
 
     p = Publisher()
-    data = {'timestamp': datetime.datetime.now(), 'data': [['z', 0], ['q', 1],['x', 0], ['y', 1]]}
+    data = {'timestamp': datetime.datetime.now(), 'data': [['z', 0], ['q', 1], ['x', 0], ['y', 1]]}
     p.publish_data(data)
-

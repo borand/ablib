@@ -11,7 +11,9 @@ class MyFormatter(logging.Formatter):
     based on https://stackoverflow.com/a/14859558
     """
     # the base format, used when a format for a specific level is not defined
-    base_format = '%(asctime)-8s | %(levelname)s:  | [%(filename)s:%(lineno)d]: %(message)s \n'
+    # base_format = '%(asctime)-8s | %(levelname)s:  | [%(filename)s:%(lineno)d]: %(message)s \'
+    base_format = '%(asctime)-8s| %(filename)-20s %(funcName)-20s |%(lineno)4d | %(levelname)9s | %(message)s'
+
 
     # defining the critical format
     critical_format = base_format
@@ -20,7 +22,7 @@ class MyFormatter(logging.Formatter):
         """
         Sets the base format according to the class variable 'base_format'
         """
-        super().__init__(fmt=MyFormatter.base_format, datefmt=None, style='%')
+        super().__init__(fmt=MyFormatter.base_format, datefmt="%Y.%m.%d %H:%M", style='%')
 
     def format(self, record):
         """
