@@ -17,6 +17,7 @@ except ImportError:
 from requests.auth import HTTPBasicAuth
 from ablib.common import scan
 
+
 # # Create a custom logger
 # logger = logging.getLogger(__name__)
 #
@@ -249,6 +250,10 @@ class SensorDataDb:
 
         return api_out
 
+    def get_todays_data(self, sn, db_ix=0):
+        t = datetime.date.today()
+        return self.get_days_data(sn, t.year, t.month, t.day, db_ix=db_ix)
+
 
 class Publisher:
 
@@ -362,7 +367,6 @@ def json_to_np(json_data, sec=False, resample=False):
 
 
 if __name__ == '__main__':
-
     p = Publisher()
     data = {'timestamp': datetime.datetime.now(), 'data': [['z', 0], ['q', 1], ['x', 0], ['y', 1]]}
     p.publish_data(data)
