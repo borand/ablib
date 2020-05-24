@@ -1,0 +1,31 @@
+# Based on https://github.com/torfsen/python-systemd-tutorial
+#
+# Save file to ~/.config/systemd/user/ directory
+#
+# List and start
+#  systemctl --user daemon-reload
+#  systemctl --user list-unit-files
+#  systemctl --user start ablib_w1
+#  systemctl --user status ablib_w1
+
+
+[Unit]
+# Human readable name of the unit
+Description=Python3 ablib one wire acquisition library
+
+[Service]
+# Command to execute when the service is started
+ExecStart=/home/pi/.local/bin/ab w1
+
+# Disable Python's buffering of STDOUT and STDERR, so that output from the
+# service shows up immediately in systemd's logs
+Environment=PYTHONUNBUFFERED=1
+
+# Automatically restart the service if it crashes
+Restart=on-failure
+
+# Our service will notify systemd once it is up and running
+Type=notify
+
+[Install]
+WantedBy=default.target
