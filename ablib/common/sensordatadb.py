@@ -18,21 +18,21 @@ from requests.auth import HTTPBasicAuth
 from ablib.common import scan
 
 
-# # Create a custom logger
-# logger = logging.getLogger(__name__)
-#
-# # Create handlers
-# c_handler = logging.StreamHandler()
-# c_handler.setLevel(logging.INFO)
-#
-# # Create formatters and add it to handlers
-# c_format = logging.Formatter(
-#     '%(asctime)-8s| %(filename)-20s %(funcName)-20s |%(lineno)4d | %(levelname)9s | %(message)s', "%Y.%m.%d %H:%M")
-# c_handler.setFormatter(c_format)
-#
-# # Add handlers to the logger
-# # logger.addHandler(c_handler)
-# logger.setLevel(logging.INFO)
+# Create a custom logger
+logger = logging.getLogger(__name__)
+
+# Create handlers
+c_handler = logging.StreamHandler()
+c_handler.setLevel(logging.INFO)
+
+# Create formatters and add it to handlers
+c_format = logging.Formatter(
+    '%(asctime)-8s| %(filename)-20s %(funcName)-20s |%(lineno)4d | %(levelname)9s | %(message)s', "%Y.%m.%d %H:%M")
+c_handler.setFormatter(c_format)
+
+# Add handlers to the logger
+# logger.addHandler(c_handler)
+logger.setLevel(logging.DEBUG)
 
 
 class SensorDataDb:
@@ -55,7 +55,8 @@ class SensorDataDb:
 
         if len(self.api_url) == 0:
             logging.error(
-                "is_db_server_online()  :  Do not have a valid api_url, running find_db_server(), then try the function again")
+                "is_db_server_online()  :  Do not have a valid api_url, running find_db_server(), then try the "
+                "function again")
             self.find_all_servers()
 
         db_server_online = [False] * len(self.ip)
@@ -282,10 +283,10 @@ class Publisher:
         self._serial_numbers_in_db_last_updated = []
 
         self._update_serial_number()
-        logging.info(f"Publiser(@{self._gateway})")
-        logging.info(f"   sendor db: {self.db.ip}")
-        logging.info(f"        mqtt: {self.mqtt_server_list}")
-        logging.info(f"       redis: {self.redis_server_list}")
+        logger.info(f"Publiser(@{self._gateway})")
+        logger.info(f"   sendor db: {self.db.ip}")
+        logger.info(f"        mqtt: {self.mqtt_server_list}")
+        logger.info(f"       redis: {self.redis_server_list}")
 
     def __repr__(self):
         return f"Publiser(@{self._gateway})"
@@ -308,10 +309,10 @@ class Publisher:
         timestamp = dataset["timestamp"]
 
         if len(dataset.keys()) == 0:
-            logging.info("No data to publish")
+            logger.info("No data to publish")
             return
 
-        logging.info(f"Publishing {dataset} @ {timestamp}")
+        logger.info(f"Publishing {dataset} @ {timestamp}")
 
         for entry in dataset["data"]:
             sn = entry[0]
@@ -325,9 +326,9 @@ class Publisher:
                 r = redis.Redis(redis_server)
                 for entry in dataset["data"]:
                     r.set(f'{entry[0]}', f'{entry[1]}')
-                logging.info(f"  published to redis")
+                logger.info(f"  published to redis")
             except Exception as e:
-                logging.error(e)
+                logger.error(e)
 
         # Publish data to MQTT broker
         for mqtt_server in self.mqtt_server_list:
@@ -338,11 +339,11 @@ class Publisher:
                 for entry in dataset["data"]:
                     client.publish(f'{self.mqqt_topic}/{entry[0]}', json.dumps({'val': entry[1]}))
                     out = client.publish(f'{self.mqqt_topic}', json.dumps(entry))
-                    logging.debug(f"Published {entry} to mqtt: {out.is_published()}")
-                logging.info(f"  published to mqtt topick {self.mqqt_topic}")
+                    logger.debug(f"Published {entry} to mqtt: {out.is_published()}")
+                logger.info(f"  published to mqtt topick {self.mqqt_topic}")
 
             except Exception as e:
-                logging.error(e)
+                logger.error(e)
 
 
 def json_to_np(json_data, sec=False, resample=False):
