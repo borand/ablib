@@ -18,12 +18,13 @@ c_handler = logging.StreamHandler()
 c_handler.setLevel(logging.DEBUG)
 
 # Create formatters and add it to handlers
-c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+c_format = logging.Formatter(
+    '%(asctime)-8s| %(filename)-20s %(funcName)-20s |%(lineno)4d | %(levelname)9s | %(message)s', "%Y.%m.%d %H:%M")
 c_handler.setFormatter(c_format)
 
 # Add handlers to the logger
 logger.addHandler(c_handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 crc = re.compile(r"crc=\w{2} (\w+)")
 t_C = re.compile(r"t=(-*\d+)")

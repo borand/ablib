@@ -1,24 +1,33 @@
-import logging
+from selenium import webdriver
+import re
+from time import sleep
+import datetime
+re_snr = re.compile('SNR Margin \(dB\)\:\s*(-{0,1}\d+\.\d+)\s*(-{0,1}\d+\.\d+)')
+re_at_rate = re.compile('Attainable Rate \(Kbps\)\:\s(\d+)\s(\d+)')
+re_rate = re.compile('(?:\r\n|\r|\n)Rate \(Kbps\)\:\s(\d+)\s(\d+)')
 
-logger = logging.getLogger('simple_example')
-logger.setLevel(logging.DEBUG)
-# create file handler which logs even debug messages
-fh = logging.FileHandler('spam.log')
-fh.setLevel(logging.DEBUG)
-# create console handler with a higher log level
-ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
-# create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)-8s| %(filename)-20s %(funcName)-20s |%(lineno)4d | %(levelname)9s | %(message)s',"%Y.%m.%d %H:%M")
-ch.setFormatter(formatter)
-fh.setFormatter(formatter)
-# add the handlers to logger
-logger.addHandler(ch)
-logger.addHandler(fh)
+d = webdriver.Firefox()
+d.implicitly_wait(3)
 
-# 'application' code
-logger.debug('debug message')
-logger.info('info message')
-logger.warning('warn message')
-logger.error('error message')
-logger.critical('critical message')
+fid = open('teksavyy.csv','w')
+
+try:
+    while True:
+        d.get('http://192.168.1.1/admin/landingpage.fwd')
+        out = d.find_elements_by_class_name('stats')
+        res = out[1].text
+        snr_dB = re_snr.findall(res)
+        attainable_rate = re_at_rate.findall(res)
+        my_rate = re_rate.findall(res)
+        print(f"Down: SNR {snr_dB[0][0]}, Attainable Rate: {attainable_rate[0][0]}, My Rate:  {my_rate[0][0]}")
+        timestamp = datetime.datetime.now().strftime("%Y.%d.%m %H:%M:%S")
+        fid.writelines(f"{timestamp}, {snr_dB[0][0]}, {attainable_rate[0][0]}, {my_rate[0][0]}\n")
+        #fid.writelines(res)
+        sleep(3)
+except KeyboardInterrupt:
+    pass
+print('Closing selenium connection')
+d.quit()
+print('Closing file')
+fid.close()
+print('All done')
