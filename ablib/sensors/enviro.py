@@ -12,6 +12,12 @@ from fonts.ttf import RobotoMedium as UserFont
 from enviroplus.noise import Noise
 from ablib.common import sensordatadb as sdb
 import datetime
+from ablib.common import sensordatadb as sdb
+from ablib.sensors import onewire
+from ablib.common import scan
+
+ow = onewire.RPiOneWire()
+
 pub = sdb.Publisher()
 now = datetime.datetime.now()
 timestamp = now.strftime('%Y_%m_%d_%H%M%s')
@@ -331,6 +337,7 @@ font_lg = ImageFont.truetype(UserFont, 14)
 
 # Margins
 margin = 3
+line_height = 15
 
 
 # Set up BME280 weather sensor
@@ -362,11 +369,11 @@ while True:
     background = draw_background(progress, period, day)
 
     # Time.
+    hostname = scan.get_hostname()
     time_elapsed = time.time() - start_time
-    date_string = local_dt.strftime("%d %b %y").lstrip('0')
-    time_string = local_dt.strftime("%H:%M")
-    img = overlay_text(background, (0 + margin, 0 + margin), time_string, font_lg)
-    img = overlay_text(img, (WIDTH - margin, 0 + margin), date_string, font_lg, align_right=True)
+    date_string = local_dt.strftime("%y %b %d %H:%M")
+    date_string += " {0}@{1}".format(hostname[0], hostname[1])
+    img = overlay_text(img, (margin, 0 + margin), date_string, font_lg)
 
     # Temperature
     temperature = bme280.get_temperature()
@@ -387,66 +394,61 @@ while True:
             min_temp = corr_temperature
             max_temp = corr_temperature
 
-    temp_string = f"{corr_temperature:.0f}°C"
-    img = overlay_text(img, (68, 18), temp_string, font_lg, align_right=True)
+    temp_string = f"T: {corr_temperature:.0f}°C"
     spacing = font_lg.getsize(temp_string)[1] + 1
     if min_temp is not None and max_temp is not None:
-        range_string = f"{min_temp:.0f}-{max_temp:.0f}"
+        range_string = f" range [{min_temp:.0f}-{max_temp:.0f}]°C"
     else:
-        range_string = "------"
-    img = overlay_text(img, (68, 18 + spacing), range_string, font_sm, align_right=True, rectangle=True)
-    temp_icon = Image.open(f"{path}/icons/temperature.png")
-    img.paste(temp_icon, (margin, 18), mask=temp_icon)
+        range_string = " ------"
+    temp_string += range_string
+    img = overlay_text(img, (margin, line_height + margin), temp_string, font_lg)
 
-    # Humidity
+    # Humidity & Pressure
     humidity = bme280.get_humidity()
-    corr_humidity = correct_humidity(humidity, temperature, corr_temperature)
-    humidity_string = f"{corr_humidity:.0f}%"
-    img = overlay_text(img, (68, 48), humidity_string, font_lg, align_right=True)
-    spacing = font_lg.getsize(humidity_string)[1] + 1
-    humidity_desc = describe_humidity(corr_humidity).upper()
-    img = overlay_text(img, (68, 48 + spacing), humidity_desc, font_sm, align_right=True, rectangle=True)
-    humidity_icon = Image.open(f"{path}/icons/humidity-{humidity_desc.lower()}.png")
-    img.paste(humidity_icon, (margin, 48), mask=humidity_icon)
-
-    # Light
-    light = ltr559.get_lux()
-    light_string = f"{int(light):,}"
-    img = overlay_text(img, (WIDTH - margin, 18), light_string, font_lg, align_right=True)
-    spacing = font_lg.getsize(light_string.replace(",", ""))[1] + 1
-    light_desc = describe_light(light).upper()
-    img = overlay_text(img, (WIDTH - margin - 1, 18 + spacing), light_desc, font_sm, align_right=True, rectangle=True)
-    light_icon = Image.open(f"{path}/icons/bulb-{light_desc.lower()}.png")
-    img.paste(humidity_icon, (80, 18), mask=light_icon)
-
-    # Pressure
     pressure = bme280.get_pressure()
     t = time.time()
     mean_pressure, change_per_hour, trend = analyse_pressure(pressure, t)
-    pressure_string = f"{int(mean_pressure):,} {trend}"
-    img = overlay_text(img, (WIDTH - margin, 48), pressure_string, font_lg, align_right=True)
-    pressure_desc = describe_pressure(mean_pressure).upper()
-    spacing = font_lg.getsize(pressure_string.replace(",", ""))[1] + 1
-    img = overlay_text(img, (WIDTH - margin - 1, 48 + spacing), pressure_desc, font_sm, align_right=True, rectangle=True)
-    pressure_icon = Image.open(f"{path}/icons/weather-{pressure_desc.lower()}.png")
-    img.paste(pressure_icon, (80, 48), mask=pressure_icon)
+
+    corr_humidity = correct_humidity(humidity, temperature, corr_temperature)
+    humidity_string = f"H: {corr_humidity:.0f}, P: {int(mean_pressure)}hPa"
+    img = overlay_text(img, (margin, 2*line_height + margin), humidity_string, font_lg)
+
+    # Light
+    light = ltr559.get_lux()
+    light_string = f"L: {int(light):,}"
+    img = overlay_text(img, (margin, 3*line_height + margin), light_string, font_lg)
+    spacing = font_lg.getsize(light_string.replace(",", ""))[1] + 1
 
     # Noise
     low, mid, high, amp = noise.get_noise_profile()
+    low *= 128
+    low = round(low)
+    mid *= 128
+    mid = round(mid)
+    high *= 128
+    high = round(high)
+    amp *= 64
+    amp = round(amp)
+    noise_string = f"N: [{int(low):,} {int(mid):,}, {int(high):,}, {int(amp):,}]"
+    img = overlay_text(img, (margin, 4 * line_height + margin), noise_string, font_lg)
 
-    db_data = []
-    db_data.append(["env1-cpu-temp", cpu_temp])
-    db_data.append(["env1-raw-temp", temperature])
-    db_data.append(["env1-cor-temp", corr_temperature])
-    db_data.append(["env1-raw-humidity", humidity])
-    db_data.append(["env1-cor-humidity", corr_humidity])
-    db_data.append(["env1-light", light])
-    db_data.append(["env1-pressure", pressure])
-    db_data.append(["env1-noise-low", low])
-    db_data.append(["env1-noise-mid", mid])
-    db_data.append(["env1-noise-high", high])
-    db_data.append(["env1-noise-ampl", amp])
+    db_data = [["env1-cpu-temp", cpu_temp], ["env1-raw-temp", temperature], ["env1-cor-temp", corr_temperature],
+               ["env1-raw-humidity", humidity], ["env1-cor-humidity", corr_humidity], ["env1-light", light],
+               ["env1-pressure", pressure], ["env1-noise-low", low], ["env1-noise-mid", mid], ["env1-noise-high", high],
+               ["env1-noise-ampl", amp]]
+    # Onewire
+    ow_data = ow.get_sensor_data()
+
+    if len(ow_data) > 0:
+        db_data.append(db_data[0])
 
     pub.publish_data({'timestamp': datetime.datetime.now(), 'data': db_data})
+    # Display image
+
+    try:
+        dt = datetime.now()
+        pub.publish_data({'timestamp': dt, 'data': db_data})
+    except Exception as e:
+        print(e)
     # Display image
     disp.display(img)

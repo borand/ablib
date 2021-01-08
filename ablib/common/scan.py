@@ -43,6 +43,10 @@ def get_host_ip():
     return ip
 
 
+def get_hostname():
+    return (sh.hostname().strip(), sh.hostname('-I').strip())
+
+
 def find_db_server(hosts=None, db_server_port=8000):
     """
     :param hosts: - None or list of ip addresses to scan for database servers

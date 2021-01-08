@@ -112,7 +112,7 @@ def run(pause_sec=10):
 
     # Save pid file with timestamp
     fid = open(pid_filename, 'w')
-    fid.writelines(timestamp)
+    fid.writelines(f"started at {timestamp}")
     fid.close()
 
     row = RPiOneWire()
@@ -124,7 +124,9 @@ def run(pause_sec=10):
         while pid.exists():
             sensor_data = row.get_sensor_data()
             try:
-                publisher.publish_data({'timestamp': datetime.datetime.now(), 'data': sensor_data})
+                dt = datetime.datetime.now()
+                dt = dt.replace(microsecond=0)
+                publisher.publish_data({'timestamp': dt, 'data': sensor_data})
             except Exception as e:
                 logger.error(e)
 

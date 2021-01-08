@@ -32,7 +32,7 @@ c_handler.setFormatter(c_format)
 
 # Add handlers to the logger
 # logger.addHandler(c_handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SensorDataDb:
@@ -200,6 +200,7 @@ class SensorDataDb:
 
     def submit_data_to_db(self, data_list, timestamp=None):
         logging.debug("submit_data_to_db()")
+        db_sub_results = [0, 0]
 
         if timestamp is None:
             timestamp = datetime.datetime.now()
@@ -210,7 +211,7 @@ class SensorDataDb:
 
         for db_url in self.api_url:
             for sd in data_list:
-
+                db_sub_results[0] += 1
                 try:
                     sn = sd[0]
                     val = sd[1]
@@ -218,12 +219,15 @@ class SensorDataDb:
                     url = f'{db_url}/sub/{timestamp_str}/sn/{sn}/val/{val}'
                     api_out = requests.get(url)
                     if api_out.ok:
+                        db_sub_results[1] += 1
                         logging.debug(api_out.json())
                     else:
                         logging.warning("api_out code: {} api_out text: {}".format(api_out.status_code, api_out.text))
 
                 except Exception as ex:
                     logging.error(ex)
+
+        return db_sub_results
 
     def get_days_data(self, sn, yy, mo, dd, days=1, db_ix=0):
         logging.debug(f"get_days_data({sn}, {yy}, {mo}, {dd})")
@@ -312,38 +316,46 @@ class Publisher:
             logger.info("No data to publish")
             return
 
-        logger.info(f"Publishing {dataset} @ {timestamp}")
+        logger.debug(f"Publishing {dataset} @ {timestamp}")
 
+        info_str = ""
         for entry in dataset["data"]:
             sn = entry[0]
             self.db.register_device_instance(sn)
 
-        self.db.submit_data_to_db(dataset["data"], timestamp)
+        db_sub_results = self.db.submit_data_to_db(dataset["data"], timestamp)
 
         # Publish data to redis server
+        redis_sub_results = [0, 0]
         for redis_server in self.redis_server_list:
+            redis_sub_results[0] += 1
             try:
                 r = redis.Redis(redis_server)
                 for entry in dataset["data"]:
+                    redis_sub_results[1] += 1
                     r.set(f'{entry[0]}', f'{entry[1]}')
-                logger.info(f"  published to redis")
+                logger.debug(f"  published to redis")
             except Exception as e:
                 logger.error(e)
 
         # Publish data to MQTT broker
+        mqtt_sub_results = [0, 0]
         for mqtt_server in self.mqtt_server_list:
+            mqtt_sub_results[0] += 1
             try:
                 client = mqtt.Client("Test")
                 client.connect(mqtt_server, keepalive=60)
 
                 for entry in dataset["data"]:
+                    mqtt_sub_results[1] += 1
                     client.publish(f'{self.mqqt_topic}/{entry[0]}', json.dumps({'val': entry[1]}))
                     out = client.publish(f'{self.mqqt_topic}', json.dumps(entry))
                     logger.debug(f"Published {entry} to mqtt: {out.is_published()}")
-                logger.info(f"  published to mqtt topick {self.mqqt_topic}")
+                logger.debug(f"  published to mqtt topick {self.mqqt_topic}")
 
             except Exception as e:
                 logger.error(e)
+
 
 
 def json_to_np(json_data, sec=False, resample=False):
