@@ -10,17 +10,15 @@ import colorsys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from fonts.ttf import RobotoMedium as UserFont
 from enviroplus.noise import Noise
-from ablib.common import sensordatadb as sdb
-import datetime
+
+from yaml import load, dump, Loader, Dumper
+
 from ablib.common import sensordatadb as sdb
 from ablib.sensors import onewire
 from ablib.common import scan
 
 ow = onewire.RPiOneWire()
-
 pub = sdb.Publisher()
-now = datetime.datetime.now()
-timestamp = now.strftime('%Y_%m_%d_%H%M%s')
 
 import ST7735
 from bme280 import BME280
@@ -309,7 +307,7 @@ disp = ST7735.ST7735(
     cs=1,
     dc=9,
     backlight=12,
-    rotation=270,
+    rotation=90,
     spi_speed_hz=10000000
 )
 
@@ -319,8 +317,8 @@ WIDTH = disp.width
 HEIGHT = disp.height
 
 # The city and timezone that you want to display.
-city_name = "Sheffield"
-time_zone = "Europe/London"
+city_name = "Toronto"
+time_zone = "America/Toronto"
 
 # Values that alter the look of the background
 blur = 50
@@ -347,7 +345,7 @@ bme280 = BME280(i2c_dev=bus)
 min_temp = None
 max_temp = None
 
-factor = 2.25
+
 cpu_temps = [get_cpu_temperature()] * 5
 
 # Set up light sensor
@@ -360,6 +358,15 @@ num_vals = 1000
 interval = 1
 trend = "-"
 
+try:
+    fid = open('enviro.yaml')
+    from_config_file = fid.read()
+    fid.close()
+    conf = load(from_config_file, Loader=Loader)
+except:
+    conf = {'factor':  2.0, 'sn': 'env1'}
+
+
 # Keep track of time elapsed
 start_time = time.time()
 
@@ -371,9 +378,9 @@ while True:
     # Time.
     hostname = scan.get_hostname()
     time_elapsed = time.time() - start_time
-    date_string = local_dt.strftime("%y %b %d %H:%M")
-    date_string += " {0}@{1}".format(hostname[0], hostname[1])
-    img = overlay_text(img, (margin, 0 + margin), date_string, font_lg)
+    date_string = datetime.now().strftime("%H:%M:%S")
+    date_string += " {1}".format(hostname[0], hostname[1])
+    img = overlay_text(background, (margin, 0 + margin), date_string, font_lg)
 
     # Temperature
     temperature = bme280.get_temperature()
@@ -382,7 +389,7 @@ while True:
     cpu_temp = get_cpu_temperature()
     cpu_temps = cpu_temps[1:] + [cpu_temp]
     avg_cpu_temp = sum(cpu_temps) / float(len(cpu_temps))
-    corr_temperature = temperature - ((avg_cpu_temp - temperature) / factor)
+    corr_temperature = temperature - ((avg_cpu_temp - temperature) / conf['factor'])
 
     if time_elapsed > 30:
         if min_temp is not None and max_temp is not None:
@@ -397,7 +404,7 @@ while True:
     temp_string = f"T: {corr_temperature:.0f}°C"
     spacing = font_lg.getsize(temp_string)[1] + 1
     if min_temp is not None and max_temp is not None:
-        range_string = f" range [{min_temp:.0f}-{max_temp:.0f}]°C"
+        range_string = f" [{min_temp:.0f}-{max_temp:.0f}]°C"
     else:
         range_string = " ------"
     temp_string += range_string
@@ -410,11 +417,12 @@ while True:
     mean_pressure, change_per_hour, trend = analyse_pressure(pressure, t)
 
     corr_humidity = correct_humidity(humidity, temperature, corr_temperature)
-    humidity_string = f"H: {corr_humidity:.0f}, P: {int(mean_pressure)}hPa"
+    humidity_string = f"H: {corr_humidity:.0f}%, P: {int(mean_pressure)} Pa"
     img = overlay_text(img, (margin, 2*line_height + margin), humidity_string, font_lg)
 
     # Light
     light = ltr559.get_lux()
+    proxy = ltr559.get_proximity()
     light_string = f"L: {int(light):,}"
     img = overlay_text(img, (margin, 3*line_height + margin), light_string, font_lg)
     spacing = font_lg.getsize(light_string.replace(",", ""))[1] + 1
@@ -432,18 +440,18 @@ while True:
     noise_string = f"N: [{int(low):,} {int(mid):,}, {int(high):,}, {int(amp):,}]"
     img = overlay_text(img, (margin, 4 * line_height + margin), noise_string, font_lg)
 
-    db_data = [["env1-cpu-temp", cpu_temp], ["env1-raw-temp", temperature], ["env1-cor-temp", corr_temperature],
-               ["env1-raw-humidity", humidity], ["env1-cor-humidity", corr_humidity], ["env1-light", light],
-               ["env1-pressure", pressure], ["env1-noise-low", low], ["env1-noise-mid", mid], ["env1-noise-high", high],
-               ["env1-noise-ampl", amp]]
+    db_data = [["cpu-temp", cpu_temp], ["raw-temp", temperature], ["cor-temp", corr_temperature],
+               ["raw-humidity", humidity], ["cor-humidity", corr_humidity], ["light", light],
+               ["pressure", pressure], ["noise-low", low], ["noise-mid", mid], ["noise-high", high],
+               ["noise-ampl", amp], ['proxy', proxy]]
+    for d in db_data:
+        d[0] = conf['sn'] + '-' + d[0]
+
     # Onewire
     ow_data = ow.get_sensor_data()
 
     if len(ow_data) > 0:
         db_data.append(db_data[0])
-
-    pub.publish_data({'timestamp': datetime.datetime.now(), 'data': db_data})
-    # Display image
 
     try:
         dt = datetime.now()
@@ -451,4 +459,8 @@ while True:
     except Exception as e:
         print(e)
     # Display image
-    disp.display(img)
+    if light < 2:
+        disp.set_backlight(0)
+    else:
+        disp.set_backlight(12)
+        disp.display(img)
