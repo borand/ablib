@@ -10,7 +10,7 @@ font-roboto==0.0.1
 fonts==0.0.3
 i2cdevice==0.0.7
 idna==2.9
-ipython==7.13.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 jedi==0.17.0
 ltr559==0.1.1
